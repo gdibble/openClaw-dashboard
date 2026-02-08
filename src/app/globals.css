@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 6% 6%;
+    --foreground: 0 0% 98%;
+    --card: 240 5% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 5% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 4% 16%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 142 71% 45%;
+    --radius: 0.75rem;
+    
+    /* Custom color values */
+    --green: #46a758;
+    --amber: #ffb224;
+    --red: #e54d2e;
+    --blue: #3e63dd;
+    --purple: #8e4ec6;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .font-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Premium card styles */
+@layer components {
+  .card-premium {
+    @apply relative overflow-hidden rounded-2xl;
+    background: linear-gradient(135deg, rgba(33, 34, 37, 0.9), rgba(24, 25, 27, 0.95));
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 
+      0 0 0 1px rgba(255, 255, 255, 0.03),
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  
+  .card-premium:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 4px 8px rgba(0, 0, 0, 0.25),
+      0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .glass {
+    background: rgba(24, 25, 27, 0.8);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Status indicator */
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  
+  .status-dot.working {
+    background-color: var(--green);
+    box-shadow: 0 0 8px rgba(70, 167, 88, 0.6);
+  }
+  
+  .status-dot.idle {
+    background-color: var(--amber);
+    box-shadow: 0 0 8px rgba(255, 178, 36, 0.4);
+  }
+
+  /* Keyboard shortcut badge */
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 500;
+    font-family: ui-monospace, monospace;
+    border-radius: 4px;
+    background: hsl(var(--secondary));
+    color: hsl(var(--muted-foreground));
+    border: 1px solid hsl(var(--border));
+  }
+}
+
+/* Modal/Dialog backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 50;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 32rem;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(180deg, hsl(240 5% 12%) 0%, hsl(240 5% 10%) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 24px 64px rgba(0, 0, 0, 0.5),
+    0 0 80px rgba(0, 0, 0, 0.3);
+}
+
+/* Drawer */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  z-index: 50;
+  width: 380px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, hsl(240 5% 10%) 0%, hsl(240 5% 8%) 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.4);
+}
+
+/* Animations */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2.5s ease-in-out infinite;
+}
