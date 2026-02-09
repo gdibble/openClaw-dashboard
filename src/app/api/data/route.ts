@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { loadTasks, generateFeed, getStats, getAgents, getTokenStats } from '@/lib/data';
+import { loadTasks, generateFeed, getStats, getAgents, getTokenStats, getDashboardConfig } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -47,6 +47,7 @@ export async function GET(request: Request) {
       feed,
       stats,
       tokenStats: getTokenStats(tasks),
+      config: getDashboardConfig(),
       timestamp: Date.now(),
     });
   } catch (error) {

@@ -9,9 +9,11 @@ const inter = Inter({
   display: 'swap',
 });
 
+const dashboardName = process.env.NEXT_PUBLIC_DASHBOARD_NAME || 'OpenClaw';
+
 export const metadata: Metadata = {
-  title: "OpenClaw — Mission Control",
-  description: "OpenClaw Agent Swarm Dashboard",
+  title: `${dashboardName} — Mission Control`,
+  description: `${dashboardName} Agent Swarm Dashboard`,
 };
 
 export const viewport: Viewport = {

@@ -3,6 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Agent, Task, FeedItem, TokenStats } from '@/types';
 
+interface DashboardConfig {
+  name: string;
+  subtitle: string;
+  repoUrl: string | null;
+  version: string;
+}
+
 interface SwarmData {
   agents: Agent[];
   tasks: Task[];
@@ -17,6 +24,7 @@ interface SwarmData {
     waiting: number;
   };
   tokenStats: TokenStats | null;
+  config: DashboardConfig | null;
   timestamp: number;
 }
 
@@ -26,6 +34,7 @@ interface UseSwarmDataReturn {
   feed: FeedItem[];
   stats: SwarmData['stats'] | null;
   tokenStats: TokenStats | null;
+  config: DashboardConfig | null;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -90,6 +99,7 @@ export function useSwarmData(): UseSwarmDataReturn {
     feed: data?.feed || [],
     stats: data?.stats || null,
     tokenStats: data?.tokenStats || null,
+    config: data?.config || null,
     loading,
     error,
     refresh: fetchData,

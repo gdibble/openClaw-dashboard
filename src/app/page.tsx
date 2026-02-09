@@ -19,7 +19,7 @@ import { STATUS_CONFIG } from '@/types';
 // ── Page Component ──────────────────────────────────────────────────────
 
 export default function Home() {
-  const { agents, tasks, feed, loading, error, lastUpdated, updateTask, tokenStats } = useSwarmData();
+  const { agents, tasks, feed, loading, error, lastUpdated, updateTask, tokenStats, config } = useSwarmData();
   
   const handleTaskMove = useCallback((taskId: string, newStatus: TaskStatus) => {
     const task = tasks.find(t => t.id === taskId);
@@ -138,6 +138,9 @@ export default function Home() {
           inProgressTasks={inProgressTasks}
           feedOpen={feedOpen}
           onFeedToggle={handleFeedToggle}
+          dashboardName={config?.name}
+          dashboardSubtitle={config?.subtitle}
+          repoUrl={config?.repoUrl}
         />
 
         <AgentStrip

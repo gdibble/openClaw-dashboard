@@ -4,6 +4,34 @@ import type { Agent, Task, FeedItem, TaskStatus, Priority, TokenUsage, TokenStat
 
 const TASKS_DIR = process.env.OPENCLAW_TASKS_DIR || './tasks';
 
+// ── Dashboard Config ──────────────────────────────────────────────────
+export interface DashboardConfig {
+  name: string;
+  subtitle: string;
+  repoUrl: string | null;
+  version: string;
+}
+
+export function getDashboardConfig(): DashboardConfig {
+  // Defaults
+  let name = process.env.NEXT_PUBLIC_DASHBOARD_NAME || 'OpenClaw';
+  let subtitle = 'Mission Control';
+  let repoUrl = process.env.NEXT_PUBLIC_REPO_URL || null;
+
+  // Override from dashboard-config.json (bridge can write this)
+  const configPath = join(TASKS_DIR, 'dashboard-config.json');
+  if (existsSync(configPath)) {
+    try {
+      const raw = JSON.parse(readFileSync(configPath, 'utf-8')) as Record<string, unknown>;
+      if (raw.name && typeof raw.name === 'string') name = raw.name;
+      if (raw.subtitle && typeof raw.subtitle === 'string') subtitle = raw.subtitle;
+      if (raw.repoUrl && typeof raw.repoUrl === 'string') repoUrl = raw.repoUrl;
+    } catch { /* ignore malformed config */ }
+  }
+
+  return { name, subtitle, repoUrl, version: '0.2.0' };
+}
+
 // ── Color Validation ──────────────────────────────────────────────────
 function sanitizeColor(color: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#697177';
