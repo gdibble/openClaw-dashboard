@@ -47,10 +47,10 @@ const agentPerformance = [
 ]
 
 const statusDistribution = [
-  { name: 'Completed', value: 25, color: '#22c55e' },
-  { name: 'In Progress', value: 8, color: '#3b82f6' },
-  { name: 'Pending', value: 5, color: '#6b7280' },
-  { name: 'Blocked', value: 2, color: '#ef4444' },
+  { name: 'Completed', value: 25, color: 'var(--green)', fallback: '#46a758' },
+  { name: 'In Progress', value: 8, color: 'var(--blue)', fallback: '#3e63dd' },
+  { name: 'Pending', value: 5, color: 'var(--muted-chart, #697177)', fallback: '#697177' },
+  { name: 'Blocked', value: 2, color: 'var(--red)', fallback: '#e54d2e' },
 ]
 
 const stats = [
@@ -100,28 +100,25 @@ export function MetricsPanel() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background: 'linear-gradient(135deg, rgba(33,34,37,0.8), rgba(24,25,27,0.9))',
-        backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        boxShadow: '0 0 0 1px rgba(255,255,255,0.03), 0 2px 4px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4)',
-      }}
+      className="card-premium rounded-2xl overflow-hidden"
     >
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+        className="w-full px-6 py-4 flex items-center justify-between transition-colors"
+        style={{ background: 'var(--surface-hover)' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-active)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-hover)'}
       >
         <div className="flex items-center gap-3">
-          <BarChart3 className="w-5 h-5 text-[#8e4ec6]" />
-          <h2 className="font-semibold text-white">Metrics & Performance</h2>
+          <BarChart3 className="w-5 h-5" style={{ color: 'var(--purple)' }} />
+          <h2 className="font-semibold text-foreground">Metrics & Performance</h2>
         </div>
         <motion.div
           animate={{ rotate: isExpanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown className="w-5 h-5 text-[#697177]" />
+          <ChevronDown className="w-5 h-5 text-muted-foreground" />
         </motion.div>
       </button>
 
@@ -141,20 +138,25 @@ export function MetricsPanel() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.04] hover:border-white/[0.08] transition-colors"
+                  className="p-4 rounded-xl transition-colors"
+                  style={{
+                    background: 'var(--surface-subtle)',
+                    border: '1px solid var(--surface-card-border)',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--surface-card-hover-border)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--surface-card-border)')}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <stat.icon className="w-4 h-4 text-[#697177]" />
+                    <stat.icon className="w-4 h-4 text-muted-foreground" />
                     <span
-                      className={`text-xs font-medium ${
-                        stat.positive ? 'text-[#46a758]' : 'text-[#e54d2e]'
-                      }`}
+                      className="text-xs font-medium"
+                      style={{ color: stat.positive ? 'var(--green)' : 'var(--red)' }}
                     >
                       {stat.change}
                     </span>
                   </div>
-                  <p className="text-2xl font-bold text-white">{stat.value}</p>
-                  <p className="text-xs text-[#697177] mt-1">{stat.label}</p>
+                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                 </motion.div>
               ))}
             </div>
@@ -165,11 +167,11 @@ export function MetricsPanel() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveChart(tab.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    activeChart === tab.id
-                      ? 'bg-white/[0.08] text-white'
-                      : 'text-[#697177] hover:text-[#b0b4ba] hover:bg-white/[0.03]'
-                  }`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
+                  style={activeChart === tab.id
+                    ? { background: 'var(--surface-active)', color: 'var(--foreground)' }
+                    : { color: 'hsl(var(--muted-foreground))' }
+                  }
                 >
                   {tab.icon}
                   {tab.label}
@@ -192,34 +194,34 @@ export function MetricsPanel() {
                       <AreaChart data={activityData}>
                         <defs>
                           <linearGradient id="taskGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8e4ec6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#8e4ec6" stopOpacity={0} />
+                            <stop offset="5%" stopColor="var(--purple, #8e4ec6)" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="var(--purple, #8e4ec6)" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#313538" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                         <XAxis
                           dataKey="day"
-                          tick={{ fill: '#697177', fontSize: 12 }}
-                          axisLine={{ stroke: '#313538' }}
+                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
                           tickLine={false}
                         />
                         <YAxis
-                          tick={{ fill: '#697177', fontSize: 12 }}
-                          axisLine={{ stroke: '#313538' }}
+                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
                           tickLine={false}
                         />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#18191b',
-                            border: '1px solid #313538',
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
                             borderRadius: '8px',
-                            color: '#edeef0',
+                            color: 'hsl(var(--foreground))',
                           }}
                         />
                         <Area
                           type="monotone"
                           dataKey="tasks"
-                          stroke="#8e4ec6"
+                          stroke="var(--purple, #8e4ec6)"
                           strokeWidth={2}
                           fill="url(#taskGradient)"
                         />
@@ -238,27 +240,27 @@ export function MetricsPanel() {
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={agentPerformance} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#313538" horizontal={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                         <XAxis
                           type="number"
-                          tick={{ fill: '#697177', fontSize: 12 }}
-                          axisLine={{ stroke: '#313538' }}
+                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
                           tickLine={false}
                         />
                         <YAxis
                           type="category"
                           dataKey="name"
-                          tick={{ fill: '#b0b4ba', fontSize: 12 }}
+                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
                           axisLine={false}
                           tickLine={false}
                           width={60}
                         />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#18191b',
-                            border: '1px solid #313538',
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
                             borderRadius: '8px',
-                            color: '#edeef0',
+                            color: 'hsl(var(--foreground))',
                           }}
                         />
                         <Bar dataKey="completed" radius={[0, 4, 4, 0]}>
@@ -277,44 +279,83 @@ export function MetricsPanel() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
-                    className="h-[200px] flex items-center justify-center"
+                    className="h-[200px]"
                   >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={statusDistribution}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={4}
-                          dataKey="value"
-                        >
-                          {statusDistribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: '#18191b',
-                            border: '1px solid #313538',
-                            borderRadius: '8px',
-                            color: '#edeef0',
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute flex flex-col gap-2">
-                      {statusDistribution.map((item) => (
-                        <div key={item.name} className="flex items-center gap-2 text-xs">
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: item.color }}
-                          />
-                          <span className="text-[#b0b4ba]">{item.name}</span>
-                          <span className="text-white font-medium">{item.value}</span>
+                    <div className="flex items-center h-full gap-6">
+                      {/* Donut Chart */}
+                      <div className="relative w-[180px] h-[180px] flex-shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={statusDistribution}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={55}
+                              outerRadius={80}
+                              paddingAngle={3}
+                              dataKey="value"
+                              strokeWidth={0}
+                            >
+                              {statusDistribution.map((entry, index) => (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={entry.fallback}
+                                  style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.3))' }}
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '10px',
+                                color: 'hsl(var(--foreground))',
+                                padding: '8px 12px',
+                                fontSize: '13px',
+                              }}
+                              formatter={(value?: number) => [`${value} tasks`, '']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        {/* Center label */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-2xl font-bold text-foreground font-tabular">
+                            {statusDistribution.reduce((sum, d) => sum + d.value, 0)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Total</span>
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Legend */}
+                      <div className="flex flex-col gap-3 flex-1 min-w-0">
+                        {statusDistribution.map((item) => {
+                          const total = statusDistribution.reduce((s, d) => s + d.value, 0)
+                          const pct = total > 0 ? Math.round((item.value / total) * 100) : 0
+                          return (
+                            <div key={item.name} className="flex items-center gap-3">
+                              <div
+                                className="w-3 h-3 rounded-[3px] flex-shrink-0"
+                                style={{ backgroundColor: item.fallback }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-foreground truncate">{item.name}</span>
+                                  <span className="text-sm font-semibold text-foreground font-tabular ml-2">{item.value}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-subtle)' }}>
+                                    <div
+                                      className="h-full rounded-full transition-all duration-500"
+                                      style={{ width: `${pct}%`, backgroundColor: item.fallback }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground font-tabular w-8 text-right">{pct}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                   </motion.div>
                 )}
