@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "sync": "npx tsx scripts/sync-db.ts",
-    "sync:watch": "npx tsx --watch scripts/sync-db.ts"
+    "sync:watch": "npx tsx --watch scripts/sync-db.ts",
+    "setup-db": "npx tsx scripts/ensure-tables.ts",
+    "log-usage": "npx tsx scripts/log-usage.ts",
+    "dispatch": "bash scripts/dispatch-task.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
