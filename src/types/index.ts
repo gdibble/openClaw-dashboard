@@ -9,6 +9,24 @@ export interface Agent {
   avatar?: string;
 }
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+  model?: string;
+  provider?: string;
+  timestamp?: number;
+}
+
+export interface TokenStats {
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  tokensByAgent: Record<string, { input: number; output: number }>;
+  tokensByModel: { model: string; input: number; output: number }[];
+  dailyTokens: { date: string; input: number; output: number }[];
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -19,6 +37,7 @@ export interface Task {
   tags: string[];
   createdAt: number;
   updatedAt?: number;
+  usage?: TokenUsage[];
 }
 
 export type TaskStatus = 'inbox' | 'assigned' | 'in-progress' | 'review' | 'waiting' | 'done';

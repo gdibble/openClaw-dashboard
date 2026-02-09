@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Agent, Task, FeedItem } from '@/types';
+import type { Agent, Task, FeedItem, TokenStats } from '@/types';
 
 interface SwarmData {
   agents: Agent[];
@@ -16,6 +16,7 @@ interface SwarmData {
     inbox: number;
     waiting: number;
   };
+  tokenStats: TokenStats | null;
   timestamp: number;
 }
 
@@ -24,6 +25,7 @@ interface UseSwarmDataReturn {
   tasks: Task[];
   feed: FeedItem[];
   stats: SwarmData['stats'] | null;
+  tokenStats: TokenStats | null;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -87,6 +89,7 @@ export function useSwarmData(): UseSwarmDataReturn {
     tasks: data?.tasks || [],
     feed: data?.feed || [],
     stats: data?.stats || null,
+    tokenStats: data?.tokenStats || null,
     loading,
     error,
     refresh: fetchData,

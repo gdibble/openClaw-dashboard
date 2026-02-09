@@ -9,6 +9,7 @@ import LiveFeed from '@/components/LiveFeed';
 import TaskModal from '@/components/TaskModal';
 import AgentModal from '@/components/AgentModal';
 import { MetricsPanel } from '@/components/MetricsPanel';
+import { TokenMetricsPanel } from '@/components/TokenMetricsPanel';
 import { CommandPalette } from '@/components/CommandPalette';
 import { toast } from 'sonner';
 import { useSwarmData } from '@/lib/useSwarmData';
@@ -18,7 +19,7 @@ import { STATUS_CONFIG } from '@/types';
 // ── Page Component ──────────────────────────────────────────────────────
 
 export default function Home() {
-  const { agents, tasks, feed, loading, error, lastUpdated, updateTask } = useSwarmData();
+  const { agents, tasks, feed, loading, error, lastUpdated, updateTask, tokenStats } = useSwarmData();
   
   const handleTaskMove = useCallback((taskId: string, newStatus: TaskStatus) => {
     const task = tasks.find(t => t.id === taskId);
@@ -157,8 +158,9 @@ export default function Home() {
         />
 
         {/* Metrics Panel */}
-        <div className="mt-8 mb-8">
+        <div className="mt-8 mb-8 space-y-6">
           <MetricsPanel />
+          <TokenMetricsPanel tokenStats={tokenStats} />
         </div>
         
         {/* Last updated indicator */}

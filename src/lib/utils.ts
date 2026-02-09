@@ -21,6 +21,12 @@ export function formatNumber(num: number): string {
   return new Intl.NumberFormat().format(num);
 }
 
+export function formatTokens(count: number): string {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
+  return String(count);
+}
+
 export function formatUTC(epochMs: number): string {
   const d = new Date(epochMs);
   const year = d.getUTCFullYear();

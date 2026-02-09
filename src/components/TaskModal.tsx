@@ -2,8 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { X, Clock, Tag, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { timeAgo } from '@/lib/utils';
+import { cn, timeAgo, formatTokens } from '@/lib/utils';
 import type { Agent, Task } from '@/types';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/types';
 import AgentAvatar from './AgentAvatar';
@@ -123,6 +122,43 @@ export default function TaskModal({ task, agents, onClose }: TaskModalProps) {
             </div>
           </div>
         </div>
+
+        {/* Token Usage */}
+        {task.usage && task.usage.length > 0 && (() => {
+          const totalIn = task.usage.reduce((s, u) => s + u.inputTokens, 0);
+          const totalOut = task.usage.reduce((s, u) => s + u.outputTokens, 0);
+          const models = [...new Set(task.usage.map(u => u.model).filter(Boolean))];
+          return (
+            <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-[#3e63dd]/5 border border-[#3e63dd]/10 mb-6">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 block mb-1.5">
+                  Input Tokens
+                </span>
+                <span className="text-sm font-medium text-foreground font-tabular">
+                  {formatTokens(totalIn)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 block mb-1.5">
+                  Output Tokens
+                </span>
+                <span className="text-sm font-medium text-foreground font-tabular">
+                  {formatTokens(totalOut)}
+                </span>
+              </div>
+              {models.length > 0 && (
+                <div className="col-span-2">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 block mb-1.5">
+                    Model{models.length > 1 ? 's' : ''}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {models.join(', ')}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Assignee */}
         <div className="pt-4 border-t border-border/50">

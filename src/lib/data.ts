@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join, resolve } from 'path';
-import type { Agent, Task, FeedItem, TaskStatus, Priority } from '@/types';
+import type { Agent, Task, FeedItem, TaskStatus, Priority, TokenUsage, TokenStats } from '@/types';
 
 const TASKS_DIR = process.env.OPENCLAW_TASKS_DIR || './tasks';
 
@@ -84,6 +84,29 @@ function extractTags(task: Record<string, unknown>): string[] {
   return [];
 }
 
+// ── Parse Usage ───────────────────────────────────────────────────────
+function parseUsage(raw: unknown): TokenUsage[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const result: TokenUsage[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue;
+    const r = item as Record<string, unknown>;
+    const input = Number(r.inputTokens ?? r.input_tokens ?? 0);
+    const output = Number(r.outputTokens ?? r.output_tokens ?? 0);
+    if (input === 0 && output === 0) continue;
+    result.push({
+      inputTokens: input,
+      outputTokens: output,
+      cacheReadTokens: r.cacheReadTokens != null ? Number(r.cacheReadTokens) : (r.cache_read_tokens != null ? Number(r.cache_read_tokens) : undefined),
+      cacheWriteTokens: r.cacheWriteTokens != null ? Number(r.cacheWriteTokens) : (r.cache_write_tokens != null ? Number(r.cache_write_tokens) : undefined),
+      model: r.model != null ? String(r.model) : undefined,
+      provider: r.provider != null ? String(r.provider) : undefined,
+      timestamp: r.timestamp != null ? Number(r.timestamp) : undefined,
+    });
+  }
+  return result.length > 0 ? result : undefined;
+}
+
 // ── Load Tasks ─────────────────────────────────────────────────────────
 export function loadTasks(): Task[] {
   if (!existsSync(TASKS_DIR)) {
@@ -112,6 +135,7 @@ export function loadTasks(): Task[] {
       const content = readFileSync(fullPath, 'utf-8');
       const raw = JSON.parse(content) as Record<string, unknown>;
       
+      const usage = parseUsage(raw.usage);
       tasks.push({
         id: String(raw.id || file.replace('.json', '')),
         title: String(raw.title || 'Untitled'),
@@ -122,6 +146,7 @@ export function loadTasks(): Task[] {
         tags: extractTags(raw),
         createdAt: parseDate(raw.created_at as string || raw.created as string),
         updatedAt: parseDate(raw.completed_at as string || raw.completed as string || raw.updated_at as string),
+        ...(usage && { usage }),
       });
     } catch (err) {
       console.error(`Error loading ${file}:`, err);
@@ -222,5 +247,56 @@ export function getStats(tasks: Task[]) {
     assigned: tasks.filter(t => t.status === 'assigned').length,
     inbox: tasks.filter(t => t.status === 'inbox').length,
     waiting: tasks.filter(t => t.status === 'waiting').length,
+  };
+}
+
+// ── Get Token Stats ──────────────────────────────────────────────────
+export function getTokenStats(tasks: Task[]): TokenStats | null {
+  const tasksWithUsage = tasks.filter(t => t.usage && t.usage.length > 0);
+  if (tasksWithUsage.length === 0) return null;
+
+  let totalInput = 0;
+  let totalOutput = 0;
+  const byAgent: Record<string, { input: number; output: number }> = {};
+  const byModel: Record<string, { input: number; output: number }> = {};
+  const byDate: Record<string, { input: number; output: number }> = {};
+
+  for (const task of tasksWithUsage) {
+    const agentId = task.assigneeId || 'unknown';
+    if (!byAgent[agentId]) byAgent[agentId] = { input: 0, output: 0 };
+
+    for (const u of task.usage!) {
+      totalInput += u.inputTokens;
+      totalOutput += u.outputTokens;
+
+      byAgent[agentId].input += u.inputTokens;
+      byAgent[agentId].output += u.outputTokens;
+
+      const model = u.model || 'unknown';
+      if (!byModel[model]) byModel[model] = { input: 0, output: 0 };
+      byModel[model].input += u.inputTokens;
+      byModel[model].output += u.outputTokens;
+
+      const dateKey = u.timestamp
+        ? new Date(u.timestamp).toISOString().slice(0, 10)
+        : new Date(task.createdAt).toISOString().slice(0, 10);
+      if (!byDate[dateKey]) byDate[dateKey] = { input: 0, output: 0 };
+      byDate[dateKey].input += u.inputTokens;
+      byDate[dateKey].output += u.outputTokens;
+    }
+  }
+
+  return {
+    totalInputTokens: totalInput,
+    totalOutputTokens: totalOutput,
+    tokensByAgent: byAgent,
+    tokensByModel: Object.entries(byModel).map(([model, counts]) => ({
+      model,
+      input: counts.input,
+      output: counts.output,
+    })),
+    dailyTokens: Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, counts]) => ({ date, input: counts.input, output: counts.output })),
   };
 }

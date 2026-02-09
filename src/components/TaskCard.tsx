@@ -2,8 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Clock, CheckCircle2, Tag } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatUTC } from '@/lib/utils';
+import { cn, formatUTC, formatTokens } from '@/lib/utils';
 import type { Agent, Task } from '@/types';
 import { PRIORITY_CONFIG } from '@/types';
 import AgentAvatar from './AgentAvatar';
@@ -114,6 +113,22 @@ export default function TaskCard({ task, agents, onClick, compact = false, isDra
           </div>
         )}
       </div>
+
+      {/* Token Usage Badge */}
+      {task.usage && task.usage.length > 0 && (() => {
+        const totalIn = task.usage.reduce((s, u) => s + u.inputTokens, 0);
+        const totalOut = task.usage.reduce((s, u) => s + u.outputTokens, 0);
+        return (
+          <div className="flex items-center gap-1.5 mb-3 text-[10px] font-mono text-[#3e63dd]/80">
+            <span className="px-2 py-0.5 rounded-md bg-[#3e63dd]/10 border border-[#3e63dd]/20">
+              {formatTokens(totalIn + totalOut)} tok
+              <span className="text-muted-foreground/50 ml-1">
+                (in: {formatTokens(totalIn)} / out: {formatTokens(totalOut)})
+              </span>
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Footer: Assignee */}
       <div className="flex items-center justify-between pt-2 border-t border-border/30">
