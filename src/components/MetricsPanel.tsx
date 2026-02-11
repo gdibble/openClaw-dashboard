@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AreaChart,
@@ -26,75 +26,126 @@ import {
   PieChartIcon,
   Activity,
 } from 'lucide-react'
+import type { Task, Agent } from '@/types'
 
-// Mock data for charts
-const activityData = [
-  { day: 'Mon', tasks: 4 },
-  { day: 'Tue', tasks: 7 },
-  { day: 'Wed', tasks: 5 },
-  { day: 'Thu', tasks: 9 },
-  { day: 'Fri', tasks: 12 },
-  { day: 'Sat', tasks: 8 },
-  { day: 'Sun', tasks: 6 },
-]
-
-const agentPerformance = [
-  { name: 'Spark', completed: 7, color: '#f97316' },
-  { name: 'Scout', completed: 5, color: '#3b82f6' },
-  { name: 'Pixel', completed: 4, color: '#a855f7' },
-  { name: 'Critic', completed: 6, color: '#22c55e' },
-  { name: 'Forge', completed: 3, color: '#eab308' },
-]
-
-const statusDistribution = [
-  { name: 'Completed', value: 25, color: 'var(--green)', fallback: '#46a758' },
-  { name: 'In Progress', value: 8, color: 'var(--blue)', fallback: '#3e63dd' },
-  { name: 'Pending', value: 5, color: 'var(--muted-chart, #697177)', fallback: '#697177' },
-  { name: 'Blocked', value: 2, color: 'var(--red)', fallback: '#e54d2e' },
-]
-
-const stats = [
-  {
-    label: 'Total Tasks',
-    value: '40',
-    change: '+12%',
-    positive: true,
-    icon: CheckCircle2,
-  },
-  {
-    label: 'Completed',
-    value: '25',
-    change: '+8',
-    positive: true,
-    icon: TrendingUp,
-  },
-  {
-    label: 'Avg. Time',
-    value: '2.4h',
-    change: '-15%',
-    positive: true,
-    icon: Clock,
-  },
-  {
-    label: 'Streak',
-    value: '7',
-    change: 'days',
-    positive: true,
-    icon: Zap,
-  },
-]
+interface MetricsPanelProps {
+  tasks: Task[]
+  agents: Agent[]
+}
 
 type ChartType = 'activity' | 'agents' | 'status'
 
-export function MetricsPanel() {
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+export function MetricsPanel({ tasks, agents }: MetricsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [activeChart, setActiveChart] = useState<ChartType>('activity')
+
+  // ── Derive all data from props ──────────────────────────────────────
+
+  const stats = useMemo(() => {
+    const total = tasks.length
+    const done = tasks.filter(t => t.status === 'done').length
+    const inProgress = tasks.filter(t => t.status === 'in-progress').length
+
+    // Average completion time (done tasks with both timestamps)
+    const doneTasks = tasks.filter(t => t.status === 'done' && t.updatedAt && t.createdAt)
+    let avgTimeLabel = '—'
+    if (doneTasks.length > 0) {
+      const avgMs = doneTasks.reduce((sum, t) => sum + (t.updatedAt! - t.createdAt), 0) / doneTasks.length
+      const avgHours = avgMs / (1000 * 60 * 60)
+      avgTimeLabel = avgHours < 1
+        ? `${Math.round(avgHours * 60)}m`
+        : `${avgHours.toFixed(1)}h`
+    }
+
+    // Completion rate
+    const completionPct = total > 0 ? Math.round((done / total) * 100) : 0
+
+    return [
+      { label: 'Total Tasks', value: String(total), change: `${agents.filter(a => a.status === 'working').length} active`, positive: true, icon: CheckCircle2 },
+      { label: 'Completed', value: String(done), change: `${completionPct}%`, positive: true, icon: TrendingUp },
+      { label: 'Avg. Time', value: avgTimeLabel, change: `${doneTasks.length} done`, positive: true, icon: Clock },
+      { label: 'In Progress', value: String(inProgress), change: `${tasks.filter(t => t.status === 'review').length} review`, positive: true, icon: Zap },
+    ]
+  }, [tasks, agents])
+
+  const statusDistribution = useMemo(() => {
+    const counts = {
+      done: tasks.filter(t => t.status === 'done').length,
+      'in-progress': tasks.filter(t => t.status === 'in-progress').length,
+      inbox: tasks.filter(t => t.status === 'inbox').length,
+      assigned: tasks.filter(t => t.status === 'assigned').length,
+      review: tasks.filter(t => t.status === 'review').length,
+      waiting: tasks.filter(t => t.status === 'waiting').length,
+    }
+    return [
+      { name: 'Completed', value: counts.done, color: 'var(--green)', fallback: '#46a758' },
+      { name: 'In Progress', value: counts['in-progress'], color: 'var(--blue)', fallback: '#3e63dd' },
+      { name: 'Review', value: counts.review, color: 'var(--purple)', fallback: '#8e4ec6' },
+      { name: 'Pending', value: counts.inbox + counts.assigned, color: 'var(--muted-chart, #697177)', fallback: '#697177' },
+      { name: 'Waiting', value: counts.waiting, color: 'var(--red)', fallback: '#e54d2e' },
+    ].filter(d => d.value > 0)
+  }, [tasks])
+
+  const agentPerformance = useMemo(() => {
+    const agentMap = new Map(agents.map(a => [a.id, a]))
+    const counts: Record<string, number> = {}
+    for (const task of tasks) {
+      if (task.assigneeId) {
+        counts[task.assigneeId] = (counts[task.assigneeId] || 0) + 1
+      }
+    }
+    return Object.entries(counts)
+      .map(([id, completed]) => ({
+        name: agentMap.get(id)?.name || id.charAt(0).toUpperCase() + id.slice(1),
+        completed,
+        color: agentMap.get(id)?.color || '#697177',
+      }))
+      .sort((a, b) => b.completed - a.completed)
+      .slice(0, 8)
+  }, [tasks, agents])
+
+  const activityData = useMemo(() => {
+    const dayCounts: Record<string, number> = {}
+    for (const name of DAY_NAMES) dayCounts[name] = 0
+    for (const task of tasks) {
+      const day = DAY_NAMES[new Date(task.createdAt).getDay()]
+      dayCounts[day]++
+    }
+    // Start from Monday
+    const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    return order.map(day => ({ day, tasks: dayCounts[day] }))
+  }, [tasks])
 
   const chartTabs: { id: ChartType; label: string; icon: React.ReactNode }[] = [
     { id: 'activity', label: 'Activity', icon: <Activity className="w-4 h-4" /> },
     { id: 'agents', label: 'Agents', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'status', label: 'Status', icon: <PieChartIcon className="w-4 h-4" /> },
   ]
+
+  // Empty state
+  if (tasks.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="card-premium rounded-2xl overflow-hidden"
+      >
+        <div className="px-6 py-4 flex items-center gap-3" style={{ background: 'var(--surface-hover)' }}>
+          <BarChart3 className="w-5 h-5" style={{ color: 'var(--purple)' }} />
+          <h2 className="font-semibold text-foreground">Metrics & Performance</h2>
+        </div>
+        <div className="px-6 pb-6 text-center py-8">
+          <BarChart3 className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No task data yet</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">
+            Add JSON task files to your tasks directory to see metrics
+          </p>
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div
@@ -209,6 +260,7 @@ export function MetricsPanel() {
                           tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                           axisLine={{ stroke: 'hsl(var(--border))' }}
                           tickLine={false}
+                          allowDecimals={false}
                         />
                         <Tooltip
                           contentStyle={{
@@ -238,38 +290,45 @@ export function MetricsPanel() {
                     exit={{ opacity: 0, x: 10 }}
                     className="h-[200px]"
                   >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={agentPerformance} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                        <XAxis
-                          type="number"
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                          axisLine={{ stroke: 'hsl(var(--border))' }}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={60}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--card))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px',
-                            color: 'hsl(var(--foreground))',
-                          }}
-                        />
-                        <Bar dataKey="completed" radius={[0, 4, 4, 0]}>
-                          {agentPerformance.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {agentPerformance.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={agentPerformance} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                          <XAxis
+                            type="number"
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                            axisLine={{ stroke: 'hsl(var(--border))' }}
+                            tickLine={false}
+                            allowDecimals={false}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={60}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                              color: 'hsl(var(--foreground))',
+                            }}
+                          />
+                          <Bar dataKey="completed" radius={[0, 4, 4, 0]}>
+                            {agentPerformance.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-sm text-muted-foreground">No agent assignments yet</p>
+                      </div>
+                    )}
                   </motion.div>
                 )}
 

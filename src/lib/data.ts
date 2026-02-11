@@ -189,19 +189,23 @@ export function loadTasks(): Task[] {
       }
 
       const content = readFileSync(fullPath, 'utf-8');
-      const raw = JSON.parse(content) as Record<string, unknown>;
-      
-      const usage = parseUsage(raw.usage);
+      const raw = JSON.parse(content);
+
+      // Skip non-task files (arrays like feed-items.json, or objects without title)
+      if (Array.isArray(raw) || typeof raw !== 'object' || raw === null || !raw.title) continue;
+
+      const task = raw as Record<string, unknown>;
+      const usage = parseUsage(task.usage);
       tasks.push({
-        id: String(raw.id || file.replace('.json', '')),
-        title: String(raw.title || 'Untitled'),
-        description: String(raw.description || ''),
-        status: mapStatus(raw.status as string),
-        priority: mapPriority(raw.priority as string),
-        assigneeId: extractAssignee(raw),
-        tags: extractTags(raw),
-        createdAt: parseDate(raw.created_at as string || raw.created as string),
-        updatedAt: parseDate(raw.completed_at as string || raw.completed as string || raw.updated_at as string),
+        id: String(task.id || file.replace('.json', '')),
+        title: String(task.title || 'Untitled'),
+        description: String(task.description || ''),
+        status: mapStatus(task.status as string),
+        priority: mapPriority(task.priority as string),
+        assigneeId: extractAssignee(task),
+        tags: extractTags(task),
+        createdAt: parseDate(task.created_at as string || task.created as string),
+        updatedAt: parseDate(task.completed_at as string || task.completed as string || task.updated_at as string),
         ...(usage && { usage }),
       });
     } catch (err) {

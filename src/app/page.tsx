@@ -164,7 +164,7 @@ export default function Home() {
 
         {/* Metrics Panels (conditional via settings) */}
         <div className="mt-8 mb-8 space-y-6">
-          {(settings?.showMetricsPanel !== false) && <MetricsPanel />}
+          {(settings?.showMetricsPanel !== false) && <MetricsPanel tasks={tasks} agents={agents} />}
           {(settings?.showTokenPanel !== false) && (
             <TokenMetricsPanel tokenStats={tokenStats} />
           )}
