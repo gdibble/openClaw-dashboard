@@ -1,9 +1,0 @@
-{
-  "id": "sample-007",
-  "title": "Optimize bundle size",
-  "description": "Tree-shake unused imports, lazy-load heavy components, analyze webpack output",
-  "status": "inbox",
-  "priority": "normal",
-  "tags": ["performance", "optimization"],
-  "created_at": "2026-02-11T10:00:00Z"
-}
