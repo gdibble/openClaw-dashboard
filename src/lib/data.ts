@@ -21,7 +21,7 @@ export function getDashboardConfig(): DashboardConfig {
     name: settings.name,
     subtitle: settings.subtitle,
     repoUrl: settings.repoUrl,
-    version: '0.2.0',
+    version: '0.2.1',
   };
 }
 
