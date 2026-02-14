@@ -188,14 +188,14 @@ export function MetricsPanel({ tasks, agents }: MetricsPanelProps) {
             transition={{ duration: 0.2 }}
           >
             {/* Stats Row */}
-            <div className="px-6 pb-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="px-3 sm:px-6 pb-4 grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
               {stats.map((stat, index) => (
                 <motion.div
                   key={stat.label}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="p-4 rounded-xl transition-colors"
+                  className="p-3 sm:p-4 rounded-xl transition-colors"
                   style={{
                     background: 'var(--surface-subtle)',
                     border: '1px solid var(--surface-card-border)',
@@ -212,14 +212,14 @@ export function MetricsPanel({ tasks, agents }: MetricsPanelProps) {
                       {stat.change}
                     </span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{stat.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                 </motion.div>
               ))}
             </div>
 
             {/* Chart Tabs */}
-            <div className="px-6 pb-2 flex gap-1">
+            <div className="px-3 sm:px-6 pb-2 flex gap-1">
               {chartTabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -237,7 +237,7 @@ export function MetricsPanel({ tasks, agents }: MetricsPanelProps) {
             </div>
 
             {/* Charts */}
-            <div className="px-6 pb-6">
+            <div className="px-3 sm:px-6 pb-4 sm:pb-6">
               <AnimatePresence mode="wait">
                 {activeChart === 'activity' && (
                   <motion.div
@@ -342,11 +342,11 @@ export function MetricsPanel({ tasks, agents }: MetricsPanelProps) {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
-                    className="h-[200px]"
+                    className="min-h-[200px]"
                   >
-                    <div className="flex items-center h-full gap-6">
+                    <div className="flex flex-col sm:flex-row items-center h-full gap-4 sm:gap-6">
                       {/* Donut Chart */}
-                      <div className="relative w-[180px] h-[180px] flex-shrink-0">
+                      <div className="relative w-[140px] h-[140px] sm:w-[180px] sm:h-[180px] flex-shrink-0">
                         <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                           <PieChart>
                             <Pie

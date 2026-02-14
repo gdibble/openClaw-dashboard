@@ -32,10 +32,10 @@ export default function WelcomeScreen({ dashboardName }: WelcomeScreenProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card-premium rounded-2xl overflow-hidden max-w-2xl mx-auto mt-12"
+      className="card-premium rounded-2xl overflow-hidden max-w-2xl mx-auto mt-8 sm:mt-12"
     >
-      <div className="px-8 pt-8 pb-2 text-center">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+      <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-2 text-center">
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
           Welcome to {name}
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -43,7 +43,7 @@ export default function WelcomeScreen({ dashboardName }: WelcomeScreenProps) {
         </p>
       </div>
 
-      <div className="px-8 py-6 space-y-4">
+      <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-3 sm:space-y-4">
         {steps.map((step, i) => (
           <motion.div
             key={step.title}
@@ -73,7 +73,7 @@ export default function WelcomeScreen({ dashboardName }: WelcomeScreenProps) {
         ))}
       </div>
 
-      <div className="px-8 pb-8">
+      <div className="px-4 sm:px-8 pb-6 sm:pb-8">
         <div
           className="rounded-xl p-4 font-mono text-xs leading-relaxed overflow-x-auto"
           style={{

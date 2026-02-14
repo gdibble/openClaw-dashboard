@@ -45,6 +45,7 @@ A real-time web dashboard that gives you eyes on your [OpenClaw](https://opencla
 | **Update Checker** | Header shows when a new version is available on GitHub |
 | **Command Palette** | `Cmd+K` to quickly filter agents, toggle feed, refresh data |
 | **Task & Agent Modals** | Click any task or agent for full detail views with activity timelines |
+| **Mobile Responsive** | Full mobile support — wrapping layouts, bottom-sheet modals, touch-friendly sizing |
 
 ---
 

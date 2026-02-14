@@ -175,7 +175,7 @@ export default function MissionQueue({
   return (
     <div className="flex-1 pt-6 pb-16">
       {/* Filter tabs */}
-      <div className="flex items-center justify-center gap-1.5 mb-8 overflow-x-auto scrollbar-hide px-4">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 mb-6 sm:mb-8 px-2 sm:px-4">
         {filters.map(f => {
           const count = f.id === 'all'
             ? agentFiltered.length
@@ -191,7 +191,7 @@ export default function MissionQueue({
               key={f.id}
               onClick={() => onStatusFilterChange(f.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 shrink-0",
+                "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-xl transition-all duration-200",
                 isActive
                   ? "bg-secondary text-foreground border border-border/80 shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
@@ -225,7 +225,7 @@ export default function MissionQueue({
       >
         {/* GRID MODE: When viewing a specific status */}
         {isGridMode && (
-          <div className="px-4">
+          <div className="px-2 sm:px-4">
             {/* Status header */}
             {statusFilter in STATUS_CONFIG && (
               <div 
@@ -292,7 +292,7 @@ export default function MissionQueue({
 
         {/* KANBAN MODE: When viewing "all" */}
         {!isGridMode && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 px-2 sm:px-4">
             <AnimatePresence mode="popLayout">
               {visibleLanes.map(status => (
                 <DroppableLane

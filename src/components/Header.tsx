@@ -114,26 +114,26 @@ export default function Header({
 
   return (
     <div>
-      <header className="flex items-center justify-between py-4 mb-2">
+      <header className="flex items-center justify-between py-3 sm:py-4 mb-2 gap-2">
         {/* Left: Logo & Title */}
-        <div className="flex items-center gap-4">
-          <div className="relative">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <div className="relative shrink-0">
             <div className="absolute inset-0 blur-xl rounded-full" style={{ background: 'var(--accent-primary-light)' }} />
             <div
-              className="relative w-10 h-10 rounded-xl flex items-center justify-center"
+              className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center"
               style={{
                 background: `linear-gradient(to bottom right, var(--accent-primary-light), transparent)`,
                 border: `1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent)`,
               }}
             >
-              <LogoIcon className="w-5 h-5" style={{ color: 'var(--accent-primary)' }} />
+              <LogoIcon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: 'var(--accent-primary)' }} />
             </div>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground truncate">
               {dashboardName}
             </h1>
-            <p className="text-xs text-muted-foreground">{dashboardSubtitle}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{dashboardSubtitle}</p>
           </div>
         </div>
 
@@ -162,7 +162,7 @@ export default function Header({
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {onCommandPalette && (
             <button
               onClick={onCommandPalette}
@@ -186,7 +186,7 @@ export default function Header({
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200",
+                "hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl items-center justify-center transition-all duration-200",
                 "bg-secondary/50 text-muted-foreground border border-border",
                 "hover:border-border/80 hover:text-foreground hover:bg-secondary"
               )}
@@ -201,7 +201,7 @@ export default function Header({
             onClick={checkForUpdates}
             disabled={updateStatus === 'checking'}
             className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 border",
+              "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-200 border",
               updateButtonStyle,
             )}
             style={updateStatus === 'current' ? {
@@ -228,7 +228,7 @@ export default function Header({
           <button
             onClick={onFeedToggle}
             className={cn(
-              "relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200",
+              "relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-200",
               feedOpen
                 ? "border"
                 : "bg-secondary/50 text-muted-foreground border border-border hover:border-border/80 hover:text-foreground hover:bg-secondary"
@@ -256,7 +256,7 @@ export default function Header({
       {/* Update Available Banner */}
       {showBanner && (
         <div
-          className="mb-4 px-4 py-3 rounded-xl flex items-center justify-between gap-4 text-sm border"
+          className="mb-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 text-sm border"
           style={{
             background: 'var(--accent-primary-light)',
             borderColor: 'color-mix(in srgb, var(--accent-primary) 30%, transparent)',

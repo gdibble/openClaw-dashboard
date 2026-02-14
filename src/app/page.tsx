@@ -130,7 +130,7 @@ export default function Home() {
   if (!loading && tasks.length === 0 && agents.length === 0) {
     return (
       <div className="min-h-screen">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-2 sm:px-6 lg:px-8">
           <Header
             activeAgents={0}
             totalAgents={0}
@@ -154,8 +154,8 @@ export default function Home() {
     <div className="min-h-screen">
       {/* Command Palette - Global */}
       <CommandPalette onAction={handleCommand} />
-      
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div className="max-w-6xl mx-auto px-2 sm:px-6 lg:px-8">
         <Header
           activeAgents={activeAgents}
           totalAgents={agents.length}
@@ -189,7 +189,7 @@ export default function Home() {
         />
 
         {/* Metrics Panels (conditional via settings) */}
-        <div className="mt-8 mb-8 space-y-6">
+        <div className="mt-6 sm:mt-8 mb-6 sm:mb-8 space-y-4 sm:space-y-6 px-2 sm:px-0">
           {(settings?.showMetricsPanel !== false) && <MetricsPanel tasks={tasks} agents={agents} />}
           {(settings?.showTokenPanel !== false) && (
             <TokenMetricsPanel tokenStats={tokenStats} />

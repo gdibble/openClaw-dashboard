@@ -130,7 +130,7 @@ export function CommandPalette({ onAction }: CommandPaletteProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-xl z-50"
+            className="fixed top-[10%] sm:top-[20%] left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] sm:w-full max-w-xl z-50"
           >
             <Command
               className="rounded-2xl overflow-hidden"
