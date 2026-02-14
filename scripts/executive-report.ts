@@ -14,36 +14,10 @@ import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from '
 import { resolve } from 'path';
 import { Client } from 'pg';
 
-// ── Parse CLI args ──────────────────────────────────────────────────────
-function parseArgs(): Record<string, string> {
-  const args: Record<string, string> = {};
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    const key = argv[i].replace(/^--/, '');
-    if (key === 'no-db') {
-      args['no-db'] = 'true';
-      continue;
-    }
-    const val = argv[i + 1];
-    if (key && val && !val.startsWith('--')) {
-      args[key] = val;
-      i++;
-    }
-  }
-  return args;
-}
-
-const args = parseArgs();
-const TASKS_DIR = process.env.OPENCLAW_TASKS_DIR || './tasks';
-const DATABASE_URL = process.env.DATABASE_URL || '';
-const DAYS = parseInt(args['days'] || '7', 10);
-const OUTPUT_PATH = args['output'] || '';
-const FORMAT = args['format'] === 'json' ? 'json' : 'md';
-const SKIP_DB = args['no-db'] === 'true';
 const MAX_FILE_SIZE = 1_048_576;
 
 // ── Types ───────────────────────────────────────────────────────────────
-interface TaskData {
+export interface TaskData {
   id: string;
   title: string;
   status: string;
@@ -55,7 +29,7 @@ interface TaskData {
   usage?: Array<{ inputTokens: number; outputTokens: number; model?: string }>;
 }
 
-interface ReportData {
+export interface ReportData {
   period: { days: number; from: string; to: string };
   tasks: {
     total: number;
@@ -74,9 +48,15 @@ interface ReportData {
   dbAvailable: boolean;
 }
 
+interface PgData {
+  handoffCount: number;
+  sessionCount: number;
+  tokenRows: Array<{ input_tokens: number; output_tokens: number; model: string | null }>;
+}
+
 // ── Load tasks from disk ────────────────────────────────────────────────
-function loadTasksFromDisk(): TaskData[] {
-  const resolvedDir = resolve(TASKS_DIR);
+export function loadTasksFromDisk(tasksDir: string): TaskData[] {
+  const resolvedDir = resolve(tasksDir);
   if (!existsSync(resolvedDir)) return [];
 
   const files = readdirSync(resolvedDir).filter(f => f.endsWith('.json'));
@@ -101,20 +81,14 @@ function loadTasksFromDisk(): TaskData[] {
 }
 
 // ── Load additional data from PG ────────────────────────────────────────
-interface PgData {
-  handoffCount: number;
-  sessionCount: number;
-  tokenRows: Array<{ input_tokens: number; output_tokens: number; model: string | null }>;
-}
+async function loadFromPg(skipDb: boolean, databaseUrl: string, days: number): Promise<PgData | null> {
+  if (skipDb || !databaseUrl) return null;
 
-async function loadFromPg(): Promise<PgData | null> {
-  if (SKIP_DB || !DATABASE_URL) return null;
-
-  const client = new Client({ connectionString: DATABASE_URL });
+  const client = new Client({ connectionString: databaseUrl });
   try {
     await client.connect();
 
-    const cutoff = new Date(Date.now() - DAYS * 86400000).toISOString();
+    const cutoff = new Date(Date.now() - days * 86400000).toISOString();
 
     const handoffs = await client.query(
       'SELECT COUNT(*) as count FROM handoffs WHERE created_at >= $1', [cutoff]
@@ -140,9 +114,9 @@ async function loadFromPg(): Promise<PgData | null> {
 }
 
 // ── Build report data ───────────────────────────────────────────────────
-function buildReport(tasks: TaskData[], pgData: PgData | null): ReportData {
+export function buildReport(tasks: TaskData[], pgData: PgData | null, days: number = 7): ReportData {
   const now = new Date();
-  const from = new Date(now.getTime() - DAYS * 86400000);
+  const from = new Date(now.getTime() - days * 86400000);
 
   // Status counts
   const statusMap: Record<string, string> = {
@@ -207,7 +181,7 @@ function buildReport(tasks: TaskData[], pgData: PgData | null): ReportData {
   const completionRate = total > 0 ? ((done / total) * 100).toFixed(1) + '%' : '0%';
 
   return {
-    period: { days: DAYS, from: from.toISOString().slice(0, 10), to: now.toISOString().slice(0, 10) },
+    period: { days, from: from.toISOString().slice(0, 10), to: now.toISOString().slice(0, 10) },
     tasks: { total, done, inProgress, review, inbox, completionRate },
     agents,
     tokens: { total: totalTokens, byModel: tokensByModel },
@@ -217,7 +191,7 @@ function buildReport(tasks: TaskData[], pgData: PgData | null): ReportData {
 }
 
 // ── Format as markdown ──────────────────────────────────────────────────
-function toMarkdown(report: ReportData): string {
+export function toMarkdown(report: ReportData): string {
   const lines: string[] = [];
 
   lines.push(`# OpenClaw Executive Report`);
@@ -281,25 +255,52 @@ function toMarkdown(report: ReportData): string {
   return lines.join('\n');
 }
 
-// ── Main ────────────────────────────────────────────────────────────────
-async function main() {
-  const tasks = loadTasksFromDisk();
-  const pgData = await loadFromPg();
-  const report = buildReport(tasks, pgData);
-
-  let output: string;
-  if (FORMAT === 'json') {
-    output = JSON.stringify(report, null, 2);
-  } else {
-    output = toMarkdown(report);
+// ── Parse CLI args ──────────────────────────────────────────────────────
+function parseArgs(): Record<string, string> {
+  const args: Record<string, string> = {};
+  const argv = process.argv.slice(2);
+  for (let i = 0; i < argv.length; i++) {
+    const key = argv[i].replace(/^--/, '');
+    if (key === 'no-db') {
+      args['no-db'] = 'true';
+      continue;
+    }
+    const val = argv[i + 1];
+    if (key && val && !val.startsWith('--')) {
+      args[key] = val;
+      i++;
+    }
   }
-
-  if (OUTPUT_PATH) {
-    writeFileSync(OUTPUT_PATH, output);
-    console.log(`Report written to ${OUTPUT_PATH}`);
-  } else {
-    console.log(output);
-  }
+  return args;
 }
 
-main();
+// ── CLI main guard ──────────────────────────────────────────────────────
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('executive-report.ts')) {
+  const args = parseArgs();
+  const tasksDir = process.env.OPENCLAW_TASKS_DIR || './tasks';
+  const databaseUrl = process.env.DATABASE_URL || '';
+  const days = parseInt(args['days'] || '7', 10);
+  const outputPath = args['output'] || '';
+  const format = args['format'] === 'json' ? 'json' : 'md';
+  const skipDb = args['no-db'] === 'true';
+
+  (async () => {
+    const tasks = loadTasksFromDisk(tasksDir);
+    const pgData = await loadFromPg(skipDb, databaseUrl, days);
+    const report = buildReport(tasks, pgData, days);
+
+    let output: string;
+    if (format === 'json') {
+      output = JSON.stringify(report, null, 2);
+    } else {
+      output = toMarkdown(report);
+    }
+
+    if (outputPath) {
+      writeFileSync(outputPath, output);
+      console.log(`Report written to ${outputPath}`);
+    } else {
+      console.log(output);
+    }
+  })();
+}

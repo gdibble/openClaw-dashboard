@@ -3,7 +3,9 @@ import { join, resolve } from 'path';
 import type { Agent, Task, FeedItem, TaskStatus, Priority, TokenUsage, TokenStats } from '@/types';
 import { loadSettings, ACCENT_PRESETS, type DashboardSettings, type AccentColor } from '@/lib/settings';
 
-const TASKS_DIR = process.env.OPENCLAW_TASKS_DIR || './tasks';
+function getTasksDir(): string {
+  return process.env.OPENCLAW_TASKS_DIR || './tasks';
+}
 
 // ── Dashboard Config ──────────────────────────────────────────────────
 export interface DashboardConfig {
@@ -77,7 +79,7 @@ export const AGENTS: Agent[] = [
 
 // ── Dynamic Agent Status ─────────────────────────────────────────────
 export function getAgents(): Agent[] {
-  const statusPath = join(TASKS_DIR, 'agents-status.json');
+  const statusPath = join(getTasksDir(), 'agents-status.json');
   if (!existsSync(statusPath)) return AGENTS;
 
   try {
@@ -168,22 +170,25 @@ let _tasksCache: Task[] | null = null;
 let _tasksCachedAt = 0;
 const TASKS_CACHE_TTL = 5000; // re-read from disk every 5s at most
 
+/** @internal — test only */
+export function _resetTasksCache() { _tasksCache = null; _tasksCachedAt = 0; }
+
 export function loadTasks(): Task[] {
   const now = Date.now();
   if (_tasksCache && (now - _tasksCachedAt) < TASKS_CACHE_TTL) return _tasksCache;
 
-  if (!existsSync(TASKS_DIR)) {
-    console.warn('Tasks directory not found:', TASKS_DIR);
+  if (!existsSync(getTasksDir())) {
+    console.warn('Tasks directory not found:', getTasksDir());
     return [];
   }
 
-  const resolvedDir = resolve(TASKS_DIR);
-  const files = readdirSync(TASKS_DIR).filter(f => f.endsWith('.json'));
+  const resolvedDir = resolve(getTasksDir());
+  const files = readdirSync(getTasksDir()).filter(f => f.endsWith('.json'));
   const tasks: Task[] = [];
 
   for (const file of files) {
     try {
-      const fullPath = resolve(TASKS_DIR, file);
+      const fullPath = resolve(getTasksDir(), file);
       if (!fullPath.startsWith(resolvedDir + '/')) {
         console.warn('Skipping path traversal attempt:', file);
         continue;
@@ -266,7 +271,7 @@ export function generateFeed(tasks: Task[]): FeedItem[] {
   }
 
   // Merge feed items from bridge script (file claims, memory entries)
-  const feedPath = join(TASKS_DIR, 'feed-items.json');
+  const feedPath = join(getTasksDir(), 'feed-items.json');
   if (existsSync(feedPath)) {
     try {
       const rawFeed = JSON.parse(readFileSync(feedPath, 'utf-8')) as Array<{

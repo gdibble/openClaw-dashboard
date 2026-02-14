@@ -79,6 +79,9 @@ let _cached: DashboardSettings | null = null;
 let _cachedAt = 0;
 const CACHE_TTL = 5000; // re-read file every 5s at most
 
+/** @internal — test only */
+export function _resetSettingsCache() { _cached = null; _cachedAt = 0; }
+
 export function loadSettings(): DashboardSettings {
   const now = Date.now();
   if (_cached && (now - _cachedAt) < CACHE_TTL) return _cached;

@@ -12,30 +12,21 @@
 import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 
-// ── Parse CLI args ──────────────────────────────────────────────────────
-function parseArgs(): Record<string, string> {
-  const args: Record<string, string> = {};
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i += 2) {
-    const key = argv[i].replace(/^--/, '');
-    const val = argv[i + 1];
-    if (key && val) args[key] = val;
-  }
-  return args;
-}
-
-const args = parseArgs();
-const TASKS_DIR = process.env.OPENCLAW_TASKS_DIR || './tasks';
-const OUTPUT_DIR = args['output-dir'] || './exports';
-const PREFIX = args['prefix'] || 'openclaw-export';
 const MAX_FILE_SIZE = 1_048_576; // 1 MB
 
-// ── Main ────────────────────────────────────────────────────────────────
-function exportBundle() {
-  const resolvedDir = resolve(TASKS_DIR);
+export interface ExportBundle {
+  exportedAt: string;
+  taskCount: number;
+  tasks: Record<string, unknown>[];
+  agentsStatus: Record<string, string> | null;
+  feedItems: unknown[] | null;
+}
+
+// ── Core export function ──────────────────────────────────────────────
+export function exportBundle(tasksDir: string): ExportBundle {
+  const resolvedDir = resolve(tasksDir);
   if (!existsSync(resolvedDir)) {
-    console.error(`Tasks directory not found: ${TASKS_DIR}`);
-    process.exit(1);
+    throw new Error(`Tasks directory not found: ${tasksDir}`);
   }
 
   const files = readdirSync(resolvedDir).filter(f => f.endsWith('.json'));
@@ -69,32 +60,51 @@ function exportBundle() {
       } else if (content && typeof content === 'object' && !Array.isArray(content) && content.title) {
         tasks.push(content);
       }
-    } catch (err) {
+    } catch {
       console.warn(`Skipping malformed JSON: ${file}`);
     }
   }
 
-  // Build bundle
-  const bundle = {
+  return {
     exportedAt: new Date().toISOString(),
     taskCount: tasks.length,
     tasks,
     agentsStatus,
     feedItems,
   };
+}
+
+// ── Parse CLI args ──────────────────────────────────────────────────────
+function parseArgs(): Record<string, string> {
+  const args: Record<string, string> = {};
+  const argv = process.argv.slice(2);
+  for (let i = 0; i < argv.length; i += 2) {
+    const key = argv[i].replace(/^--/, '');
+    const val = argv[i + 1];
+    if (key && val) args[key] = val;
+  }
+  return args;
+}
+
+// ── CLI main guard ──────────────────────────────────────────────────────
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('export-bundle.ts')) {
+  const args = parseArgs();
+  const tasksDir = process.env.OPENCLAW_TASKS_DIR || './tasks';
+  const outputDir = args['output-dir'] || './exports';
+  const prefix = args['prefix'] || 'openclaw-export';
+
+  const bundle = exportBundle(tasksDir);
 
   // Ensure output directory exists
-  if (!existsSync(OUTPUT_DIR)) {
-    mkdirSync(OUTPUT_DIR, { recursive: true });
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir, { recursive: true });
   }
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const outputPath = join(OUTPUT_DIR, `${PREFIX}-${timestamp}.json`);
+  const outputPath = join(outputDir, `${prefix}-${timestamp}.json`);
   writeFileSync(outputPath, JSON.stringify(bundle, null, 2));
 
-  console.log(`Exported ${tasks.length} tasks to ${outputPath}`);
-  if (agentsStatus) console.log(`  Agent statuses: ${Object.keys(agentsStatus).length} agents`);
-  if (feedItems) console.log(`  Feed items: ${(feedItems as unknown[]).length}`);
+  console.log(`Exported ${bundle.taskCount} tasks to ${outputPath}`);
+  if (bundle.agentsStatus) console.log(`  Agent statuses: ${Object.keys(bundle.agentsStatus).length} agents`);
+  if (bundle.feedItems) console.log(`  Feed items: ${(bundle.feedItems as unknown[]).length}`);
 }
-
-exportBundle();
