@@ -99,10 +99,25 @@ function outcomeToPriority(outcome: string | null): string {
   }
 }
 
+// ── Connect with retry ───────────────────────────────────────────────────
+async function connectWithRetry(client: Client, maxRetries = 5): Promise<void> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await client.connect();
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      const delay = Math.min(1000 * 2 ** (attempt - 1), 30000);
+      console.warn(`PG connect attempt ${attempt}/${maxRetries} failed, retrying in ${delay / 1000}s...`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
+
 // ── Main sync ───────────────────────────────────────────────────────────
 async function sync() {
   const client = new Client({ connectionString: DATABASE_URL });
-  await client.connect();
+  await connectWithRetry(client);
 
   try {
     // Ensure tasks directory exists
@@ -284,7 +299,17 @@ async function sync() {
   }
 }
 
-sync().catch(err => {
-  console.error('Sync failed:', err instanceof Error ? err.message : 'Unknown error');
-  process.exit(1);
-});
+async function run() {
+  while (true) {
+    try {
+      await sync();
+      return;
+    } catch (err) {
+      console.error('Sync failed:', err instanceof Error ? err.message : 'Unknown error');
+      console.log('Retrying in 30s...');
+      await new Promise(r => setTimeout(r, 30000));
+    }
+  }
+}
+
+run();

@@ -45,6 +45,9 @@ next-env.d.ts
 /tasks/*
 !/tasks/sample-*.json
 
+# nightly export bundles
+/exports
+
 # user personalization (persists across updates)
 settings.json
 

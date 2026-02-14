@@ -60,8 +60,6 @@ interface UseSwarmDataReturn {
   updateTask: (taskId: string, updates: Partial<Task>) => void;
 }
 
-const REFRESH_INTERVAL = 30000; // 30 seconds
-
 export function useSwarmData(): UseSwarmDataReturn {
   const [data, setData] = useState<SwarmData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,11 +90,12 @@ export function useSwarmData(): UseSwarmDataReturn {
     fetchData();
   }, [fetchData]);
 
-  // Auto-refresh
+  // Auto-refresh — uses settings.refreshInterval when available, else 30s
+  const refreshMs = data?.settings?.refreshInterval ?? 30000;
   useEffect(() => {
-    const interval = setInterval(fetchData, REFRESH_INTERVAL);
+    const interval = setInterval(fetchData, refreshMs);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, refreshMs]);
 
   // Optimistic task update
   const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {

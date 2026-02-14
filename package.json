@@ -11,7 +11,9 @@
     "sync:watch": "npx tsx --watch scripts/sync-db.ts",
     "setup-db": "npx tsx scripts/ensure-tables.ts",
     "log-usage": "npx tsx scripts/log-usage.ts",
-    "dispatch": "bash scripts/dispatch-task.sh"
+    "dispatch": "bash scripts/dispatch-task.sh",
+    "export": "npx tsx scripts/export-bundle.ts",
+    "report": "npx tsx scripts/executive-report.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

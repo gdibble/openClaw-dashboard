@@ -163,8 +163,15 @@ function parseUsage(raw: unknown): TokenUsage[] | undefined {
   return result.length > 0 ? result : undefined;
 }
 
-// ── Load Tasks ─────────────────────────────────────────────────────────
+// ── Load Tasks (cached) ──────────────────────────────────────────────────
+let _tasksCache: Task[] | null = null;
+let _tasksCachedAt = 0;
+const TASKS_CACHE_TTL = 5000; // re-read from disk every 5s at most
+
 export function loadTasks(): Task[] {
+  const now = Date.now();
+  if (_tasksCache && (now - _tasksCachedAt) < TASKS_CACHE_TTL) return _tasksCache;
+
   if (!existsSync(TASKS_DIR)) {
     console.warn('Tasks directory not found:', TASKS_DIR);
     return [];
@@ -215,7 +222,9 @@ export function loadTasks(): Task[] {
 
   // Sort by createdAt descending (newest first)
   tasks.sort((a, b) => b.createdAt - a.createdAt);
-  
+
+  _tasksCache = tasks;
+  _tasksCachedAt = Date.now();
   return tasks;
 }
 
