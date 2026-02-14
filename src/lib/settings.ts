@@ -58,7 +58,7 @@ export interface DashboardSettings {
 const DEFAULTS: DashboardSettings = {
   name: 'OpenClaw',
   subtitle: 'Mission Control',
-  repoUrl: null,
+  repoUrl: 'https://github.com/bokiko/openClaw-dashboard',
   logoIcon: 'zap',
   theme: 'dark',
   accentColor: 'green',
