@@ -94,10 +94,15 @@ class GatewayClient {
             params: {
               minProtocol: 3,
               maxProtocol: 3,
-              client: { id: 'dashboard', version: '1.0', platform: 'darwin', mode: 'backend' },
+              client: {
+                id: process.env.GATEWAY_CLIENT_ID || 'openclaw-control-ui',
+                version: '2.0',
+                platform: process.platform,
+                mode: 'backend',
+              },
               auth: { token: GATEWAY_TOKEN },
-              role: 'operator',
-              scopes: ['operator.admin'],
+              role: process.env.GATEWAY_ROLE || 'operator',
+              scopes: (process.env.GATEWAY_SCOPES || 'operator.admin,operator.read,operator.write,operator.talk').split(','),
               ...(challengeNonce ? { nonce: challengeNonce } : {}),
             },
           }));
@@ -114,6 +119,13 @@ class GatewayClient {
           // If this is the connect response and we haven't authenticated yet
           if (!this.authenticated && resp.ok) {
             this.authenticated = true;
+            // Log granted scopes for debugging
+            const granted = (resp.payload as Record<string, unknown>)?.scopes;
+            if (granted) {
+              console.log('[gateway] Authenticated — granted scopes:', granted);
+            } else {
+              console.warn('[gateway] Authenticated but no scopes returned in payload');
+            }
             clearTimeout(timeout);
             settled = true;
             resolve();
