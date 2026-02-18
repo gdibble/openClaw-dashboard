@@ -1,201 +1,191 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, FormEvent } from 'react';
 import { motion } from 'framer-motion';
-import * as Dialog from '@radix-ui/react-dialog';
-import { X, Send, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import type { Agent, Priority } from '@/types';
-import PriorityPicker from './PriorityPicker';
-import LabelPicker from './LabelPicker';
-import AssigneePicker from './AssigneePicker';
+import { X, Plus } from 'lucide-react';
+import type { Agent, TaskStatus, Priority, CreateTaskInput } from '@/types';
+import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/types';
 
 interface TaskCreateModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   agents: Agent[];
+  onClose: () => void;
+  onCreated: (task: CreateTaskInput) => void;
 }
 
-export default function TaskCreateModal({ open, onOpenChange, agents }: TaskCreateModalProps) {
-  const [prompt, setPrompt] = useState('');
+export default function TaskCreateModal({ agents, onClose, onCreated }: TaskCreateModalProps) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<TaskStatus>('inbox');
   const [priority, setPriority] = useState<Priority>(2);
-  const [labels, setLabels] = useState<string[]>([]);
-  const [skills, setSkills] = useState<string[]>([]);
-  const [assignees, setAssignees] = useState<string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
+  const [assigneeId, setAssigneeId] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const resetForm = useCallback(() => {
-    setPrompt('');
-    setPriority(2);
-    setLabels([]);
-    setSkills([]);
-    setAssignees([]);
-  }, []);
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
 
-  const handleSubmit = useCallback(async () => {
-    const trimmed = prompt.trim();
-    if (!trimmed || submitting) return;
+    setLoading(true);
+    setError('');
 
-    setSubmitting(true);
+    const input: CreateTaskInput = {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      status,
+      priority,
+      assigneeId: assigneeId || undefined,
+      tags: tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+    };
+
     try {
-      const res = await fetch('/api/cluster/tasks', {
+      const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: trimmed,
-          priority: priority === 0 ? 10 : priority === 1 ? 7 : 3, // Map back to cluster scale (1-10)
-          labels,
-          requiredSkills: skills,
-          assignees,
-        }),
+        body: JSON.stringify(input),
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP ${res.status}`);
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to create task');
       }
 
-      toast.success('Task created', {
-        description: trimmed.slice(0, 60),
-        duration: 3000,
-      });
-
-      resetForm();
-      onOpenChange(false);
+      onCreated(input);
+      onClose();
     } catch (err) {
-      toast.error('Failed to create task', {
-        description: err instanceof Error ? err.message : 'Unknown error',
-      });
+      setError(err instanceof Error ? err.message : 'Failed to create task');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
-  }, [prompt, priority, labels, skills, assignees, submitting, resetForm, onOpenChange]);
+  }
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay asChild>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-          />
-        </Dialog.Overlay>
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        className="relative w-full sm:max-w-lg bg-card border border-border rounded-t-2xl sm:rounded-2xl
+                   p-6 max-h-[85vh] overflow-y-auto"
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-foreground">New Task</h2>
+          <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition-colors">
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
 
-        <Dialog.Content asChild>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-full max-w-lg max-h-[85vh] overflow-y-auto z-50 rounded-2xl p-6"
-            style={{
-              background: 'linear-gradient(180deg, hsl(240 5% 12%) 0%, hsl(240 5% 10%) 100%)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              boxShadow: '0 0 0 1px rgba(255,255,255,0.04), 0 24px 64px rgba(0,0,0,0.5), 0 0 80px rgba(0,0,0,0.3)',
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <Dialog.Title className="text-lg font-semibold text-foreground">
-                Create Task
-              </Dialog.Title>
-              <Dialog.Close asChild>
-                <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </Dialog.Close>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Task title"
+              autoFocus
+              required
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
+                         text-foreground placeholder:text-muted-foreground/50
+                         focus:outline-none focus:border-[var(--accent-primary)]"
+            />
+          </div>
 
-            {/* Form */}
-            <div className="space-y-5">
-              {/* Prompt */}
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground/60 block mb-1.5">
-                  Task Prompt
-                </label>
-                <textarea
-                  autoFocus
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe the task for the swarm..."
-                  rows={4}
-                  className="w-full resize-none text-sm bg-background/50 border border-border/50 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-border transition-colors leading-relaxed"
-                />
-              </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional description"
+              rows={3}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
+                         text-foreground placeholder:text-muted-foreground/50 resize-none
+                         focus:outline-none focus:border-[var(--accent-primary)]"
+            />
+          </div>
 
-              {/* Priority */}
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground/60 block mb-1.5">
-                  Priority
-                </label>
-                <PriorityPicker value={priority} onChange={setPriority} />
-              </div>
-
-              {/* Labels */}
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground/60 block mb-1.5">
-                  Labels
-                </label>
-                <LabelPicker value={labels} onChange={setLabels} />
-              </div>
-
-              {/* Skills */}
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground/60 block mb-1.5">
-                  Required Skills
-                </label>
-                <LabelPicker
-                  value={skills}
-                  onChange={setSkills}
-                  placeholder="Add skill..."
-                />
-              </div>
-
-              {/* Assignees */}
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground/60 block mb-1.5">
-                  Assignees
-                </label>
-                <AssigneePicker
-                  agents={agents}
-                  value={assignees}
-                  onChange={setAssignees}
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border/50">
-              <Dialog.Close asChild>
-                <button className="px-4 py-2 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                  Cancel
-                </button>
-              </Dialog.Close>
-              <button
-                onClick={handleSubmit}
-                disabled={!prompt.trim() || submitting}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
-                  prompt.trim() && !submitting
-                    ? "bg-green-500/20 text-green-500 hover:bg-green-500/30 border border-green-500/30"
-                    : "bg-secondary text-muted-foreground/30 cursor-not-allowed"
-                )}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as TaskStatus)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
+                           focus:outline-none focus:border-[var(--accent-primary)]"
               >
-                {submitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-                <span>Create Task</span>
-              </button>
+                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                  <option key={key} value={key}>{cfg.label}</option>
+                ))}
+              </select>
             </div>
-          </motion.div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Priority</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(Number(e.target.value) as Priority)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
+                           focus:outline-none focus:border-[var(--accent-primary)]"
+              >
+                {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
+                  <option key={key} value={key}>{cfg.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Assignee</label>
+            <select
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
+                         focus:outline-none focus:border-[var(--accent-primary)]"
+            >
+              <option value="">Unassigned</option>
+              {agents.map(a => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Tags</label>
+            <input
+              type="text"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="Comma-separated tags"
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
+                         text-foreground placeholder:text-muted-foreground/50
+                         focus:outline-none focus:border-[var(--accent-primary)]"
+            />
+          </div>
+
+          {error && (
+            <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-400 text-xs">{error}</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !title.trim()}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--accent-primary)]
+                       hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg
+                       transition-opacity"
+          >
+            <Plus className="w-4 h-4" />
+            {loading ? 'Creating...' : 'Create Task'}
+          </button>
+        </form>
+      </motion.div>
+    </motion.div>
   );
 }

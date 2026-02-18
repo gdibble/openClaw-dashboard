@@ -15,6 +15,11 @@ import { RoutineManager } from '@/components/RoutineManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { CommandPalette } from '@/components/CommandPalette';
 import WelcomeScreen from '@/components/WelcomeScreen';
+import NotificationBell from '@/components/NotificationBell';
+import ChatPanel from '@/components/ChatPanel';
+import { AgentStripSkeleton } from '@/components/skeletons/AgentStripSkeleton';
+import { TaskCardSkeleton } from '@/components/skeletons/TaskCardSkeleton';
+import { MetricsSkeleton } from '@/components/skeletons/MetricsSkeleton';
 import { toast } from 'sonner';
 import { useClusterState } from '@/lib/useClusterState';
 import { WebSocketProvider } from '@/lib/WebSocketProvider';
@@ -48,6 +53,8 @@ function DashboardContent() {
   const [taskDetailId, setTaskDetailId] = useState<string | null>(null);
   const [agentDetailId, setAgentDetailId] = useState<string | null>(null);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [chatAgentId, setChatAgentId] = useState<string | null>(null);
+  const [routinesOpen, setRoutinesOpen] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -95,11 +102,8 @@ function DashboardContent() {
       case 'refresh':
         window.location.reload();
         break;
-      case 'filter-spark':
-        setSelectedAgentId(prev => prev === 'spark' ? null : 'spark');
-        break;
-      case 'filter-scout':
-        setSelectedAgentId(prev => prev === 'scout' ? null : 'scout');
+      case 'view-routines':
+        setRoutinesOpen(true);
         break;
       case 'filter-urgent':
         setStatusFilter('urgent');
@@ -108,7 +112,13 @@ function DashboardContent() {
         setStatusFilter('in-progress');
         break;
       default:
-        console.log('Command:', action);
+        // Dynamic agent filter: "filter-<agentId>"
+        if (action.startsWith('filter-')) {
+          const agentId = action.slice(7);
+          setSelectedAgentId(prev => prev === agentId ? null : agentId);
+        } else {
+          console.log('Command:', action);
+        }
     }
   }, []);
 
@@ -120,13 +130,19 @@ function DashboardContent() {
 
   if (!mounted) return null;
 
-  // Loading state
+  // Loading state — skeleton UI
   if (loading && tasks.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-muted-foreground">Loading swarm data...</p>
+      <div className="min-h-screen">
+        <div className="max-w-6xl mx-auto px-2 sm:px-6 lg:px-8 py-6">
+          <div className="h-12 w-48 bg-muted rounded-xl animate-pulse mb-4" />
+          <AgentStripSkeleton />
+          <div className="grid gap-3 mt-6">
+            {Array.from({ length: 4 }).map((_, i) => <TaskCardSkeleton key={i} />)}
+          </div>
+          <div className="mt-8">
+            <MetricsSkeleton />
+          </div>
         </div>
       </div>
     );
@@ -282,8 +298,22 @@ function DashboardContent() {
             feedItems={feed}
             onClose={() => setAgentDetailId(null)}
             onTaskClick={(id) => { setAgentDetailId(null); setTaskDetailId(id); }}
+            onOpenChat={(id) => { setAgentDetailId(null); setChatAgentId(id); }}
           />
         )}
+      </AnimatePresence>
+
+      {/* Chat Panel */}
+      <AnimatePresence>
+        {chatAgentId && (() => {
+          const chatAgent = agents.find(a => a.id === chatAgentId);
+          return chatAgent ? (
+            <ChatPanel
+              agent={chatAgent}
+              onClose={() => setChatAgentId(null)}
+            />
+          ) : null;
+        })()}
       </AnimatePresence>
     </div>
   );

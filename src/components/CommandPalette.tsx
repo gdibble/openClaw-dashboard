@@ -52,6 +52,7 @@ const GROUPS: CommandGroup[] = [
       { id: 'view-agents', label: 'View All Agents', icon: Users, shortcut: 'A' },
       { id: 'view-tasks', label: 'View All Tasks', icon: ListTodo, shortcut: 'T' },
       { id: 'view-messages', label: 'View Messages', icon: MessageSquare, shortcut: 'M' },
+      { id: 'view-routines', label: 'View Routines', icon: RefreshCw, shortcut: 'O' },
     ],
   },
   {

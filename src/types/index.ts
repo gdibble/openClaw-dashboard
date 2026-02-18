@@ -1,4 +1,4 @@
-// ── Legacy types (kept for component compatibility) ──────────────────
+// ── Core types ──────────────────────────────────────────────────────
 
 export interface Agent {
   id: string;
@@ -320,4 +320,124 @@ export function activityToFeedItem(a: Activity): FeedItem {
     agentId: a.workerId || undefined,
     timestamp: new Date(a.createdAt).getTime(),
   };
+}
+
+// ── V2 Types (DB-backed task detail, notifications, chat, routines) ──
+
+export interface V2ChecklistItem {
+  id: number;
+  taskId: string;
+  label: string;
+  checked: boolean;
+  sortOrder: number;
+}
+
+export interface TaskComment {
+  id: number;
+  taskId: string;
+  author: string;
+  content: string;
+  createdAt: number;
+}
+
+export interface TaskDeliverable {
+  id: number;
+  taskId: string;
+  label: string;
+  url: string;
+  type: string;
+}
+
+export interface TaskDetail extends Task {
+  parentId?: string;
+  sortOrder: number;
+  deletedAt?: number;
+  checklist: ChecklistItem[];
+  comments: TaskComment[];
+  deliverables: TaskDeliverable[];
+}
+
+export interface CreateTaskInput {
+  title: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: Priority;
+  assigneeId?: string;
+  tags?: string[];
+  parentId?: string;
+}
+
+export interface UpdateTaskInput {
+  title?: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: Priority;
+  assigneeId?: string | null;
+  tags?: string[];
+  parentId?: string | null;
+  sortOrder?: number;
+}
+
+export interface Notification {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  severity: 'info' | 'success' | 'warning' | 'error';
+  entityType?: string;
+  entityId?: string;
+  read: boolean;
+  createdAt: number;
+}
+
+export interface ChatMessage {
+  id: number;
+  agentId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  metadata?: Record<string, unknown>;
+  createdAt: number;
+}
+
+export interface RoutineSchedule {
+  days: number[];        // 0=Sun, 1=Mon, ..., 6=Sat
+  time: string;          // "HH:MM" in 24h format
+  timezone: string;      // IANA timezone, e.g. "America/New_York"
+}
+
+export interface Routine {
+  id: string;
+  name: string;
+  description: string;
+  agentId?: string;
+  schedule: RoutineSchedule;
+  enabled: boolean;
+  lastRunAt?: number;
+  nextRunAt?: number;
+  taskTemplate: CreateTaskInput;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// ── WebSocket Event Types ────────────────────────────────────────────
+
+export type WsEventType =
+  | 'connected'
+  | 'heartbeat'
+  | 'task:created'
+  | 'task:updated'
+  | 'task:moved'
+  | 'task:deleted'
+  | 'agent:status'
+  | 'feed:new'
+  | 'notification:new'
+  | 'chat:start'
+  | 'chat:chunk'
+  | 'chat:done';
+
+export interface WsEvent<T = unknown> {
+  seq: number;
+  type: WsEventType;
+  payload: T;
+  timestamp: number;
 }

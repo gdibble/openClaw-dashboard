@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -21,76 +21,79 @@ export default function LoginPage() {
         body: JSON.stringify({ password }),
       });
 
-      if (!res.ok) {
-        setError('Invalid credentials');
+      if (res.ok) {
+        router.push('/');
         return;
       }
 
-      router.push('/');
-      router.refresh();
+      const data = await res.json();
+      setError(data.error || 'Invalid password');
     } catch {
       setError('Connection failed');
     } finally {
       setLoading(false);
     }
-  }, [password, router]);
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-full max-w-sm">
-        {/* Terminal-style header */}
+    <div className="min-h-screen flex items-center justify-center bg-[#111113]">
+      <div className="w-full max-w-sm mx-4">
+        {/* Terminal header */}
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs tracking-widest text-muted-foreground uppercase">OpenClaw Cluster</span>
+          <div className="inline-flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-[#46a758] animate-pulse" />
+            <span className="text-[#46a758] font-mono text-sm tracking-wider uppercase">
+              OpenClaw
+            </span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Mission Control</h1>
-          <p className="text-sm text-muted-foreground mt-1">Operator authentication required</p>
+          <p className="text-[#697177] text-xs font-mono">
+            Operator Authentication Required
+          </p>
         </div>
 
         {/* Login form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-[#697177] text-xs font-mono mb-2 uppercase tracking-wider"
+            >
+              Password
+            </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Operator password"
+              placeholder="Enter operator password"
               autoFocus
-              className="w-full px-4 py-3 bg-card border border-border rounded-lg
-                         text-foreground placeholder:text-muted-foreground/50
-                         focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500/50
+              required
+              className="w-full px-4 py-3 bg-[#1a1a1c] border border-[#2a2a2e] rounded-lg
+                         text-white font-mono text-sm placeholder:text-[#3a3a3e]
+                         focus:outline-none focus:border-[#46a758] focus:ring-1 focus:ring-[#46a758]/30
                          transition-colors"
             />
           </div>
 
           {error && (
-            <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">
-              {error}
+            <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-400 text-xs font-mono">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading || !password}
-            className="w-full px-4 py-3 bg-green-600 hover:bg-green-500 disabled:bg-green-600/50
-                       text-white font-medium rounded-lg transition-colors
-                       disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 bg-[#46a758] hover:bg-[#3d9a4d] disabled:bg-[#2a2a2e]
+                       disabled:text-[#697177] text-white font-mono text-sm rounded-lg
+                       transition-colors focus:outline-none focus:ring-2 focus:ring-[#46a758]/50"
           >
-            {loading ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Authenticating...
-              </span>
-            ) : (
-              'Access Dashboard'
-            )}
+            {loading ? 'Authenticating...' : 'Login'}
           </button>
         </form>
 
-        {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground/30 mt-8">
-          Secured with HMAC-SHA256
+        <p className="mt-6 text-center text-[#3a3a3e] text-xs font-mono">
+          Set DASHBOARD_SECRET to configure access
         </p>
       </div>
     </div>

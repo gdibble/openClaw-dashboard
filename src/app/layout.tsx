@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { loadSettings, ACCENT_PRESETS } from "@/lib/settings";
+import { ClientProviders } from "@/components/providers/ClientProviders";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -47,7 +48,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             style={{ background: settings.backgroundGradient.bottomRight }}
           />
         </div>
-        {children}
+        <ClientProviders>
+          {children}
+        </ClientProviders>
         <Toaster
           theme={isDark ? "dark" : "light"}
           position="bottom-right"

@@ -1,96 +1,98 @@
-/**
- * Server-side auth utilities
- *
- * Session cookie signing/verification using DASHBOARD_SECRET.
- * Only imported server-side.
- */
+import { SignJWT, jwtVerify } from 'jose';
+import { isDbAvailable } from '@/lib/db';
 
-import { createHmac, timingSafeEqual } from 'crypto';
-import { cookies } from 'next/headers';
+const SESSION_DURATION = 24 * 60 * 60; // 24 hours in seconds
 
-const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || '';
-const COOKIE_NAME = 'openclaw_session';
-const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
-
-/** Create a signed session cookie value */
-export function createSessionToken(): string {
-  const payload = JSON.stringify({
-    authenticated: true,
-    iat: Date.now(),
-  });
-  const signature = createHmac('sha256', DASHBOARD_SECRET)
-    .update(payload)
-    .digest('hex');
-  return Buffer.from(`${payload}.${signature}`).toString('base64');
+function getSecret(): Uint8Array {
+  const secret = process.env.DASHBOARD_SECRET;
+  if (!secret) throw new Error('DASHBOARD_SECRET is not set');
+  return new TextEncoder().encode(secret);
 }
 
-/** Verify a session cookie value */
-export function verifySessionToken(token: string): boolean {
+export function isAuthEnabled(): boolean {
+  return !!process.env.DASHBOARD_SECRET;
+}
+
+export function verifyPassword(plain: string): boolean {
+  const secret = process.env.DASHBOARD_SECRET;
+  if (!secret) return false;
+
+  // Constant-time comparison
+  if (plain.length !== secret.length) return false;
+
+  const a = new TextEncoder().encode(plain);
+  const b = new TextEncoder().encode(secret);
+  if (a.length !== b.length) return false;
+
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a[i] ^ b[i];
+  }
+  return diff === 0;
+}
+
+export async function createSession(ip?: string): Promise<{ token: string; sessionId: string; expiresAt: Date }> {
+  const sessionId = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + SESSION_DURATION * 1000);
+
+  const token = await new SignJWT({ sid: sessionId })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(expiresAt)
+    .sign(getSecret());
+
+  // Persist to DB if available
+  if (isDbAvailable()) {
+    try {
+      const { query } = await import('@/lib/db');
+      await query(
+        `INSERT INTO operator_sessions (id, expires_at, ip_address) VALUES ($1, $2, $3)`,
+        [sessionId, expiresAt, ip ?? null],
+      );
+    } catch {
+      // DB session tracking is optional — JWT is self-contained
+    }
+  }
+
+  return { token, sessionId, expiresAt };
+}
+
+export async function validateSession(token: string): Promise<{ valid: boolean; sessionId?: string }> {
   try {
-    const decoded = Buffer.from(token, 'base64').toString('utf-8');
-    const dotIndex = decoded.lastIndexOf('.');
-    if (dotIndex === -1) return false;
+    const { payload } = await jwtVerify(token, getSecret());
+    const sessionId = payload.sid as string;
+    if (!sessionId) return { valid: false };
+    return { valid: true, sessionId };
+  } catch {
+    return { valid: false };
+  }
+}
 
-    const payload = decoded.slice(0, dotIndex);
-    const signature = decoded.slice(dotIndex + 1);
+export async function destroySession(sessionId: string): Promise<void> {
+  if (isDbAvailable()) {
+    try {
+      const { query } = await import('@/lib/db');
+      await query(`DELETE FROM operator_sessions WHERE id = $1`, [sessionId]);
+    } catch {
+      // Best-effort cleanup
+    }
+  }
+}
 
-    // Server-side expiry check: reject tokens older than COOKIE_MAX_AGE
-    const parsed = JSON.parse(payload);
-    if (!parsed.iat || Date.now() - parsed.iat > COOKIE_MAX_AGE * 1000) return false;
+export async function createWsToken(): Promise<string> {
+  // Short-lived token (30s) for WebSocket handshake
+  return new SignJWT({ type: 'ws' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('30s')
+    .sign(getSecret());
+}
 
-    const expected = createHmac('sha256', DASHBOARD_SECRET)
-      .update(payload)
-      .digest('hex');
-
-    const sigBuffer = Buffer.from(signature, 'hex');
-    const expectedBuffer = Buffer.from(expected, 'hex');
-
-    if (sigBuffer.length !== expectedBuffer.length) return false;
-
-    return timingSafeEqual(sigBuffer, expectedBuffer);
+export async function validateWsToken(token: string): Promise<boolean> {
+  try {
+    const { payload } = await jwtVerify(token, getSecret());
+    return payload.type === 'ws';
   } catch {
     return false;
   }
 }
-
-/** Verify operator password */
-export function verifyPassword(input: string): boolean {
-  const expected = process.env.OPERATOR_PASSWORD || '';
-  if (!expected || !input) return false;
-
-  const inputBuffer = Buffer.from(input);
-  const expectedBuffer = Buffer.from(expected);
-
-  if (inputBuffer.length !== expectedBuffer.length) return false;
-
-  return timingSafeEqual(inputBuffer, expectedBuffer);
-}
-
-/** Set the session cookie */
-export async function setSessionCookie(): Promise<void> {
-  const token = createSessionToken();
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: COOKIE_MAX_AGE,
-    path: '/',
-  });
-}
-
-/** Clear the session cookie */
-export async function clearSessionCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
-}
-
-/** Check if current request is authenticated */
-export async function isAuthenticated(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return false;
-  return verifySessionToken(token);
-}
-
-export { COOKIE_NAME };
