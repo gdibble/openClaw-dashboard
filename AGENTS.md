@@ -83,6 +83,10 @@ DASHBOARD_SECRET=
 # GATEWAY_WS_URL=ws://127.0.0.1:18789
 # GATEWAY_TOKEN=your-gateway-token
 # GATEWAY_HEALTH_URL=http://127.0.0.1:18792
+# Client ID for gateway handshake (default: openclaw-control-ui)
+# GATEWAY_CLIENT_ID=openclaw-control-ui
+# Scopes to request (default: operator.admin,operator.read,operator.write,operator.talk)
+# GATEWAY_SCOPES=operator.admin,operator.read,operator.write,operator.talk
 
 # ── Agent chat (optional) ────────────────────────────────────────
 # Anthropic API key for direct agent chat (when not using gateway).
@@ -90,6 +94,8 @@ DASHBOARD_SECRET=
 ```
 
 **Important:** Only uncomment and fill in the sections the user needs. File-based mode requires zero configuration beyond `OPENCLAW_TASKS_DIR`.
+
+**Gateway note:** If using gateway mode, the OpenClaw gateway must also have the dashboard's origin in its `controlUi.allowedOrigins` config. Without this, the gateway strips RPC scopes after auth and all data calls fail with "missing scope: operator.read". Run `openclaw doctor --non-interactive` after updating the gateway config to apply the change.
 
 ### Step 4: Create the tasks directory
 
@@ -602,6 +608,7 @@ General UI checks:
 | `npm run setup-db` fails | Ensure `DATABASE_URL` is set, PostgreSQL is running, and user has CREATE TABLE permission |
 | WebSocket not connecting | Ensure you're using `npm run dev` (not `npm run dev:next`) — custom server required for WS |
 | Connection indicator shows "Reconnecting..." | Gateway is unreachable — check `GATEWAY_WS_URL` and that the gateway is running |
+| Gateway auth succeeds but data calls fail with "missing scope" | Add the dashboard's origin (e.g. `http://192.168.x.x:3000`) to the gateway's `controlUi.allowedOrigins` config, then run `openclaw doctor --non-interactive` to restart |
 | Settings not applying | Check `settings.json` exists in project root and is valid JSON |
 | Theme/colors look wrong | Verify `accentColor` is one of: green, blue, purple, orange, red, cyan, amber, pink |
 | `next build` fails on `/_global-error` | Known Next.js 16 bug — does not affect functionality, ignore it |
