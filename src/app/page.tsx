@@ -29,7 +29,7 @@ import { STATUS_CONFIG } from '@/types';
 
 function DashboardContent() {
   const {
-    agents, tasks, feed, notifications, stats, loading, error, lastUpdated, connected,
+    agents, tasks, feed, notifications, stats, loading, error, lastUpdated, connected, refresh,
     clusterWorkers, dataSource, markNotificationRead, deleteNotification, clearAllNotifications,
   } = useClusterState();
 
@@ -151,9 +151,21 @@ function DashboardContent() {
   if (error && tasks.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-500 mb-2">Failed to load data</p>
-          <p className="text-muted-foreground text-sm">{error}</p>
+        <div className="text-center max-w-md mx-auto px-4">
+          <p className="text-red-500 mb-2 font-medium">Failed to load data</p>
+          <p className="text-muted-foreground text-sm mb-4">{error}</p>
+          <p className="text-muted-foreground text-xs mb-6">
+            The dashboard needs the OpenClaw gateway. Check that it is running and
+            that <code className="bg-muted px-1 rounded">GATEWAY_WS_URL</code> (and{' '}
+            <code className="bg-muted px-1 rounded">GATEWAY_TOKEN</code> if required)
+            are set correctly.
+          </p>
+          <button
+            onClick={refresh}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
