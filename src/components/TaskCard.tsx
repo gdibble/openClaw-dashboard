@@ -174,6 +174,10 @@ export default function TaskCard({ task, agents, onClick, compact = false, isDra
               {assignee.name}
             </span>
           </div>
+        ) : task.assigneeId ? (
+          <span className="text-xs text-muted-foreground font-medium">
+            {task.assigneeId.charAt(0).toUpperCase() + task.assigneeId.slice(1)}
+          </span>
         ) : (
           <span className="text-xs text-muted-foreground/60 italic">
             Unassigned

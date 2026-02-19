@@ -51,6 +51,9 @@ next-env.d.ts
 # user personalization (persists across updates)
 settings.json
 
+# gateway-mode local comments
+.gateway-comments.json
+
 # local tooling & dev notes
 .claude/
 .tldr/

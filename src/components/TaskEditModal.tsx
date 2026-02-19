@@ -68,10 +68,24 @@ export default function TaskEditModal({ taskId, agents, initialTask, readOnlyFro
     setReadOnly(isReadOnly);
   }, []);
 
+  // Load file-based comments for gateway tasks
+  const loadGatewayComments = useCallback(async (detail: TaskDetail): Promise<TaskDetail> => {
+    try {
+      const res = await fetch(`/api/gateway/tasks/${taskId}/comments`);
+      if (!res.ok) return detail;
+      const data = await res.json() as { comments: TaskComment[] };
+      if (data.comments?.length) {
+        return { ...detail, comments: [...detail.comments, ...data.comments] };
+      }
+    } catch { /* ignore — comments are best-effort */ }
+    return detail;
+  }, [taskId]);
+
   const fetchTask = useCallback(async () => {
     // Gateway mode: skip DB fetch entirely, use in-memory task
     if (readOnlyFromGateway && initialTask) {
-      populateForm(taskToDetail(initialTask), true);
+      const detail = await loadGatewayComments(taskToDetail(initialTask));
+      populateForm(detail, true);
       setLoading(false);
       return;
     }
@@ -83,14 +97,15 @@ export default function TaskEditModal({ taskId, agents, initialTask, readOnlyFro
     } catch (err) {
       // Fall back to in-memory task if available
       if (initialTask) {
-        populateForm(taskToDetail(initialTask), true);
+        const detail = await loadGatewayComments(taskToDetail(initialTask));
+        populateForm(detail, true);
       } else {
         setError(err instanceof Error ? err.message : 'Failed to load task');
       }
     } finally {
       setLoading(false);
     }
-  }, [taskId, initialTask, readOnlyFromGateway, populateForm]);
+  }, [taskId, initialTask, readOnlyFromGateway, populateForm, loadGatewayComments]);
 
   useEffect(() => { fetchTask(); }, [fetchTask]);
 
@@ -154,14 +169,22 @@ export default function TaskEditModal({ taskId, agents, initialTask, readOnlyFro
 
   async function addCommentHandler() {
     if (!newComment.trim()) return;
+    const url = readOnly
+      ? `/api/gateway/tasks/${taskId}/comments`
+      : `/api/tasks/${taskId}/comments`;
     try {
-      await fetch(`/api/tasks/${taskId}/comments`, {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newComment.trim() }),
       });
+      if (res.ok && readOnly && task) {
+        // Optimistic update for gateway mode
+        const data = await res.json() as { comment: TaskComment };
+        setTask({ ...task, comments: [...task.comments, data.comment] });
+      }
       setNewComment('');
-      await fetchTask();
+      if (!readOnly) await fetchTask();
     } catch { /* ignore */ }
   }
 
@@ -351,6 +374,11 @@ export default function TaskEditModal({ taskId, agents, initialTask, readOnlyFro
             {/* Comments Tab */}
             {activeTab === 'comments' && (
               <div className="space-y-3">
+                {readOnly && (
+                  <p className="text-xs text-muted-foreground/60 text-center">
+                    Notes are stored locally for this session.
+                  </p>
+                )}
                 {task?.comments && task.comments.length > 0 ? (
                   task.comments.map(comment => (
                     <div key={comment.id} className="p-3 bg-muted/30 rounded-lg">
@@ -364,26 +392,23 @@ export default function TaskEditModal({ taskId, agents, initialTask, readOnlyFro
                       <p className="text-sm text-foreground">{comment.content}</p>
                     </div>
                   ))
-                ) : readOnly ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    Comments are not available for gateway sessions.
-                    Tasks from the OpenClaw gateway are read-only.
+                ) : !readOnly ? null : (
+                  <p className="text-sm text-muted-foreground py-2 text-center">
+                    No notes yet.
                   </p>
-                ) : null}
-                {!readOnly && (
-                  <div className="flex gap-2">
-                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add a comment..."
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCommentHandler())}
-                      className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                                 placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--accent-primary)]"
-                    />
-                    <button onClick={addCommentHandler} disabled={!newComment.trim()}
-                      className="px-3 py-2 bg-[var(--accent-primary)] disabled:opacity-50 text-white rounded-lg transition-opacity">
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
                 )}
+                <div className="flex gap-2">
+                  <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)}
+                    placeholder={readOnly ? 'Add a note...' : 'Add a comment...'}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCommentHandler())}
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
+                               placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--accent-primary)]"
+                  />
+                  <button onClick={addCommentHandler} disabled={!newComment.trim()}
+                    className="px-3 py-2 bg-[var(--accent-primary)] disabled:opacity-50 text-white rounded-lg transition-opacity">
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             )}
           </>

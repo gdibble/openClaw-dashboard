@@ -79,6 +79,18 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** Derive an agent id from a session key when agentId is missing.
+ *  e.g. "agent:main:main" → "main", "agent:research:subagent:..." → "research"
+ */
+function deriveAgentIdFromKey(key: string): string | null {
+  if (!key) return null;
+  const parts = key.split(':');
+  if (parts.length >= 2 && parts[0] === 'agent' && parts[1]) {
+    return parts[1];
+  }
+  return null;
+}
+
 // ── Session → ClusterTask ───────────────────────────────────────────
 
 function deriveSessionStatus(session: GatewaySession): string {
@@ -99,6 +111,7 @@ function deriveSessionPriority(model: string): number {
 export function sessionToClusterTask(session: GatewaySession): ClusterTask {
   const status = deriveSessionStatus(session);
   const priority = deriveSessionPriority(session.model);
+  const agentId = session.agentId?.trim() || deriveAgentIdFromKey(session.key) || 'main';
 
   return {
     id: session.sessionId,
@@ -109,7 +122,7 @@ export function sessionToClusterTask(session: GatewaySession): ClusterTask {
     requiredSkills: [],
     preferredProvider: null,
     status,
-    assignedWorker: session.agentId,
+    assignedWorker: agentId,
     result: null,
     error: null,
     parentTaskId: null,
@@ -120,7 +133,7 @@ export function sessionToClusterTask(session: GatewaySession): ClusterTask {
     retryCount: 0,
     metadata: { flags: session.flags },
     lane: status,
-    assignees: [session.agentId],
+    assignees: [agentId],
     labels: [session.model],
     checklist: [],
     comments: [],
