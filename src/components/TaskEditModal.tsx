@@ -3,24 +3,44 @@
 import { useState, useEffect, FormEvent, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { X, Check, Square, CheckSquare, Plus, MessageSquare, Send } from 'lucide-react';
-import type { Agent, TaskDetail, TaskStatus, Priority, ChecklistItem, TaskComment } from '@/types';
+import type { Agent, Task, TaskDetail, TaskStatus, Priority, ChecklistItem, TaskComment, TaskDeliverable, ClusterChecklistItem, Comment, Deliverable } from '@/types';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/types';
 
 interface TaskEditModalProps {
   taskId: string;
   agents: Agent[];
+  initialTask?: Task;
   onClose: () => void;
   onUpdated: () => void;
 }
 
 type Tab = 'details' | 'checklist' | 'comments';
 
-export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: TaskEditModalProps) {
+/** Convert a gateway/in-memory Task to TaskDetail shape for the modal */
+function taskToDetail(t: Task): TaskDetail {
+  const checklist: ChecklistItem[] = (t.checklist ?? []).map((item, i) => {
+    if ('label' in item) return item as ChecklistItem;
+    const ci = item as ClusterChecklistItem;
+    return { id: i, taskId: t.id, label: ci.text, checked: ci.checked, sortOrder: i };
+  });
+  const comments: TaskComment[] = (t.comments ?? []).map((c, i) => {
+    if ('content' in c) return c as TaskComment;
+    const gc = c as Comment;
+    return { id: i, taskId: t.id, author: gc.author, content: gc.text, createdAt: new Date(gc.createdAt).getTime() };
+  });
+  const deliverables: TaskDeliverable[] = (t.deliverables ?? []).map((d, i) => ({
+    id: i, taskId: t.id, label: d.name, url: d.url ?? '', type: d.type,
+  }));
+  return { ...t, parentId: undefined, sortOrder: 0, checklist, comments, deliverables };
+}
+
+export default function TaskEditModal({ taskId, agents, initialTask, onClose, onUpdated }: TaskEditModalProps) {
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('details');
   const [error, setError] = useState('');
+  const [readOnly, setReadOnly] = useState(false);
 
   // Detail fields
   const [title, setTitle] = useState('');
@@ -36,24 +56,34 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
   // Comments
   const [newComment, setNewComment] = useState('');
 
+  const populateForm = useCallback((data: TaskDetail, isReadOnly = false) => {
+    setTask(data);
+    setTitle(data.title);
+    setDescription(data.description);
+    setStatus(data.status);
+    setPriority(data.priority);
+    setAssigneeId(data.assigneeId ?? '');
+    setTagsInput(data.tags.join(', '));
+    setReadOnly(isReadOnly);
+  }, []);
+
   const fetchTask = useCallback(async () => {
     try {
       const res = await fetch(`/api/tasks/${taskId}`);
       if (!res.ok) throw new Error('Failed to load task');
       const data = await res.json() as TaskDetail;
-      setTask(data);
-      setTitle(data.title);
-      setDescription(data.description);
-      setStatus(data.status);
-      setPriority(data.priority);
-      setAssigneeId(data.assigneeId ?? '');
-      setTagsInput(data.tags.join(', '));
+      populateForm(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load task');
+      // Fall back to in-memory task (gateway mode)
+      if (initialTask) {
+        populateForm(taskToDetail(initialTask), true);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load task');
+      }
     } finally {
       setLoading(false);
     }
-  }, [taskId]);
+  }, [taskId, initialTask, populateForm]);
 
   useEffect(() => { fetchTask(); }, [fetchTask]);
 
@@ -190,12 +220,13 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
             {/* Details Tab */}
             {activeTab === 'details' && (
               <form onSubmit={handleSaveDetails} className="space-y-4">
+                <fieldset disabled={readOnly} className="space-y-4">
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Title</label>
                   <input
                     type="text" value={title} onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                               focus:outline-none focus:border-[var(--accent-primary)]"
+                               focus:outline-none focus:border-[var(--accent-primary)] disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -203,7 +234,7 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
                   <textarea
                     value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                               resize-none focus:outline-none focus:border-[var(--accent-primary)]"
+                               resize-none focus:outline-none focus:border-[var(--accent-primary)] disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -211,7 +242,7 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
                     <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Status</label>
                     <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)}
                       className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                                 focus:outline-none focus:border-[var(--accent-primary)]">
+                                 focus:outline-none focus:border-[var(--accent-primary)] disabled:opacity-60 disabled:cursor-not-allowed">
                       {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
                         <option key={key} value={key}>{cfg.label}</option>
                       ))}
@@ -221,7 +252,7 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
                     <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Priority</label>
                     <select value={priority} onChange={(e) => setPriority(Number(e.target.value) as Priority)}
                       className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                                 focus:outline-none focus:border-[var(--accent-primary)]">
+                                 focus:outline-none focus:border-[var(--accent-primary)] disabled:opacity-60 disabled:cursor-not-allowed">
                       {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
                         <option key={key} value={key}>{cfg.label}</option>
                       ))}
@@ -232,7 +263,7 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
                   <label className="block text-xs text-muted-foreground mb-1 uppercase tracking-wider">Assignee</label>
                   <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}
                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                               focus:outline-none focus:border-[var(--accent-primary)]">
+                               focus:outline-none focus:border-[var(--accent-primary)] disabled:opacity-60 disabled:cursor-not-allowed">
                     <option value="">Unassigned</option>
                     {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
@@ -242,15 +273,23 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
                   <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)}
                     placeholder="Comma-separated"
                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                               placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--accent-primary)]"
+                               placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--accent-primary)] disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
-                <button type="submit" disabled={saving}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--accent-primary)]
-                             hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity">
-                  <Check className="w-4 h-4" />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
+                </fieldset>
+                {readOnly ? (
+                  <div className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-muted/50
+                                  text-muted-foreground text-sm font-medium rounded-lg">
+                    Read-only (gateway)
+                  </div>
+                ) : (
+                  <button type="submit" disabled={saving}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--accent-primary)]
+                               hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity">
+                    <Check className="w-4 h-4" />
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </form>
             )}
 
@@ -259,33 +298,46 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
               <div className="space-y-3">
                 {task?.checklist?.map(item => (
                   <div key={item.id} className="flex items-center gap-3 group">
-                    <button onClick={() => toggleChecklist(item)} className="text-muted-foreground hover:text-foreground">
-                      {item.checked
-                        ? <CheckSquare className="w-4 h-4 text-[var(--accent-primary)]" />
-                        : <Square className="w-4 h-4" />
-                      }
-                    </button>
+                    {readOnly ? (
+                      <span className="text-muted-foreground">
+                        {item.checked
+                          ? <CheckSquare className="w-4 h-4 text-[var(--accent-primary)]" />
+                          : <Square className="w-4 h-4" />
+                        }
+                      </span>
+                    ) : (
+                      <button onClick={() => toggleChecklist(item)} className="text-muted-foreground hover:text-foreground">
+                        {item.checked
+                          ? <CheckSquare className="w-4 h-4 text-[var(--accent-primary)]" />
+                          : <Square className="w-4 h-4" />
+                        }
+                      </button>
+                    )}
                     <span className={`text-sm flex-1 ${item.checked ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                       {item.label}
                     </span>
-                    <button onClick={() => deleteChecklist(item.id)}
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-opacity">
-                      <X className="w-3 h-3" />
-                    </button>
+                    {!readOnly && (
+                      <button onClick={() => deleteChecklist(item.id)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-opacity">
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 ))}
-                <div className="flex gap-2">
-                  <input type="text" value={newChecklistLabel} onChange={(e) => setNewChecklistLabel(e.target.value)}
-                    placeholder="Add checklist item..."
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addChecklist())}
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                               placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--accent-primary)]"
-                  />
-                  <button onClick={addChecklist} disabled={!newChecklistLabel.trim()}
-                    className="px-3 py-2 bg-[var(--accent-primary)] disabled:opacity-50 text-white rounded-lg transition-opacity">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div className="flex gap-2">
+                    <input type="text" value={newChecklistLabel} onChange={(e) => setNewChecklistLabel(e.target.value)}
+                      placeholder="Add checklist item..."
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addChecklist())}
+                      className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
+                                 placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--accent-primary)]"
+                    />
+                    <button onClick={addChecklist} disabled={!newChecklistLabel.trim()}
+                      className="px-3 py-2 bg-[var(--accent-primary)] disabled:opacity-50 text-white rounded-lg transition-opacity">
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -304,18 +356,20 @@ export default function TaskEditModal({ taskId, agents, onClose, onUpdated }: Ta
                     <p className="text-sm text-foreground">{comment.content}</p>
                   </div>
                 ))}
-                <div className="flex gap-2">
-                  <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCommentHandler())}
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
-                               placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--accent-primary)]"
-                  />
-                  <button onClick={addCommentHandler} disabled={!newComment.trim()}
-                    className="px-3 py-2 bg-[var(--accent-primary)] disabled:opacity-50 text-white rounded-lg transition-opacity">
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div className="flex gap-2">
+                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCommentHandler())}
+                      className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground
+                                 placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--accent-primary)]"
+                    />
+                    <button onClick={addCommentHandler} disabled={!newComment.trim()}
+                      className="px-3 py-2 bg-[var(--accent-primary)] disabled:opacity-50 text-white rounded-lg transition-opacity">
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>

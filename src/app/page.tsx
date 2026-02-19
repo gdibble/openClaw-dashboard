@@ -295,6 +295,7 @@ function DashboardContent() {
           <TaskEditModal
             taskId={taskDetailId}
             agents={agents}
+            initialTask={tasks.find(t => t.id === taskDetailId) ?? undefined}
             onClose={() => setTaskDetailId(null)}
             onUpdated={() => {
               toast.success('Task updated');
