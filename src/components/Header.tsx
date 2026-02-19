@@ -78,18 +78,20 @@ export default function Header({
           </div>
 
           {/* View Toggle */}
-          <div className="hidden sm:flex items-center gap-1 bg-secondary/30 rounded-lg p-0.5 ml-2">
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-secondary/30 rounded-lg p-0.5 ml-1 sm:ml-2">
             <Link href="/"
-              className={cn("px-3 py-1 rounded-md text-xs font-medium transition-colors",
+              className={cn("px-2 sm:px-3 py-1 rounded-md text-[11px] sm:text-xs font-medium transition-colors whitespace-nowrap",
                 currentView === 'dashboard' ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
               )}>
-              Mission Control
+              <span className="sm:hidden">Ops</span>
+              <span className="hidden sm:inline">Mission Control</span>
             </Link>
             <Link href="/activity"
-              className={cn("px-3 py-1 rounded-md text-xs font-medium transition-colors",
+              className={cn("px-2 sm:px-3 py-1 rounded-md text-[11px] sm:text-xs font-medium transition-colors whitespace-nowrap",
                 currentView === 'activity' ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
               )}>
-              Team Activity
+              <span className="sm:hidden">Activity</span>
+              <span className="hidden sm:inline">Team Activity</span>
             </Link>
           </div>
         </div>

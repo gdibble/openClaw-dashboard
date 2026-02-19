@@ -48,7 +48,7 @@ export default function ActivityStats({ items }: ActivityStatsProps) {
   const totalTokens = todayItems.reduce((sum, i) => sum + (i.tokens || 0), 0);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
       <StatCard
         icon={<ListChecks className="w-4 h-4" />}
         label="Work Items Today"

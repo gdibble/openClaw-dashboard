@@ -21,7 +21,7 @@ interface AgentFilterBarProps {
 
 function FilterGroup({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1 bg-secondary/30 rounded-lg p-0.5">
+    <div className="flex items-center gap-1 bg-secondary/30 rounded-lg p-0.5 shrink-0">
       {children}
     </div>
   );
@@ -53,13 +53,13 @@ export default function AgentFilterBar({
   onItemStatusChange,
 }: AgentFilterBarProps) {
   return (
-    <div className="flex items-center gap-3 flex-wrap mb-4">
-      {/* Agent filter */}
-      <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex flex-col gap-2 mb-4">
+      {/* Agent filter — scrollable row on mobile */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
         <button
           onClick={() => onAgentSelect(null)}
           className={cn(
-            "px-2 py-1 rounded-md text-[11px] font-medium transition-colors",
+            "px-2 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap shrink-0",
             !selectedAgentId ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
           )}
         >
@@ -70,12 +70,12 @@ export default function AgentFilterBar({
             key={agent.id}
             onClick={() => onAgentSelect(selectedAgentId === agent.id ? null : agent.id)}
             className={cn(
-              "flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition-colors",
+              "flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap shrink-0",
               selectedAgentId === agent.id ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <span
-              className="w-2 h-2 rounded-full"
+              className="w-2 h-2 rounded-full shrink-0"
               style={{ background: agent.color }}
             />
             {agent.name}
@@ -83,34 +83,35 @@ export default function AgentFilterBar({
         ))}
       </div>
 
-      <div className="w-px h-4 bg-border hidden sm:block" />
+      {/* Filter groups — scrollable row on mobile */}
+      <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-hide">
+        {/* Time range */}
+        <FilterGroup>
+          {(['today', '24h', '7d', '30d'] as TimeRange[]).map(range => (
+            <FilterButton key={range} active={timeRange === range} onClick={() => onTimeRangeChange(range)}>
+              {range === 'today' ? 'Today' : range}
+            </FilterButton>
+          ))}
+        </FilterGroup>
 
-      {/* Time range */}
-      <FilterGroup>
-        {(['today', '24h', '7d', '30d'] as TimeRange[]).map(range => (
-          <FilterButton key={range} active={timeRange === range} onClick={() => onTimeRangeChange(range)}>
-            {range === 'today' ? 'Today' : range}
-          </FilterButton>
-        ))}
-      </FilterGroup>
+        {/* Type */}
+        <FilterGroup>
+          {(['all', 'cron', 'spawn', 'direct'] as ItemType[]).map(type => (
+            <FilterButton key={type} active={itemType === type} onClick={() => onItemTypeChange(type)}>
+              {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
+            </FilterButton>
+          ))}
+        </FilterGroup>
 
-      {/* Type */}
-      <FilterGroup>
-        {(['all', 'cron', 'spawn', 'direct'] as ItemType[]).map(type => (
-          <FilterButton key={type} active={itemType === type} onClick={() => onItemTypeChange(type)}>
-            {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
-          </FilterButton>
-        ))}
-      </FilterGroup>
-
-      {/* Status */}
-      <FilterGroup>
-        {(['all', 'active', 'completed', 'failed'] as ItemStatus[]).map(status => (
-          <FilterButton key={status} active={itemStatus === status} onClick={() => onItemStatusChange(status)}>
-            {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-          </FilterButton>
-        ))}
-      </FilterGroup>
+        {/* Status */}
+        <FilterGroup>
+          {(['all', 'active', 'completed', 'failed'] as ItemStatus[]).map(status => (
+            <FilterButton key={status} active={itemStatus === status} onClick={() => onItemStatusChange(status)}>
+              {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+            </FilterButton>
+          ))}
+        </FilterGroup>
+      </div>
     </div>
   );
 }
