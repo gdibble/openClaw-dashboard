@@ -300,7 +300,7 @@ function MessageContent({ content, isCode }: { content: string; isCode: boolean 
           return (
             <pre
               key={i}
-              className="mt-2 mb-1 p-3 rounded-lg bg-black/30 border border-border/20 overflow-x-auto text-xs"
+              className="mt-2 mb-1 p-3 rounded-lg bg-muted/50 border border-border/20 overflow-x-auto text-xs"
             >
               {lang && (
                 <div className="text-[10px] text-muted-foreground/50 mb-2 uppercase tracking-wider">
@@ -321,7 +321,7 @@ function MessageContent({ content, isCode }: { content: string; isCode: boolean 
                 return (
                   <code
                     key={j}
-                    className="px-1.5 py-0.5 rounded bg-black/20 font-mono text-xs text-foreground/80"
+                    className="px-1.5 py-0.5 rounded bg-muted/40 font-mono text-xs text-foreground/80"
                   >
                     {ip.slice(1, -1)}
                   </code>

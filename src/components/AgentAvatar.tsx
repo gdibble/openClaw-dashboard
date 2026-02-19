@@ -83,7 +83,7 @@ export default function AgentAvatar({
             border: `1.5px solid ${agent.color}50`,
             ...(selected && {
               ringColor: agent.color,
-              ringOffsetColor: 'hsl(240 6% 6%)',
+              ringOffsetColor: 'hsl(var(--background))',
             }),
           }}
         >

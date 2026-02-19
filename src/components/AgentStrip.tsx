@@ -138,7 +138,7 @@ function AgentButton({
       style={{
         ...(isSelected && {
           '--tw-ring-color': `${agent.color}50`,
-          '--tw-ring-offset-color': 'hsl(240 6% 6%)'
+          '--tw-ring-offset-color': 'hsl(var(--background))'
         } as React.CSSProperties)
       }}
     >

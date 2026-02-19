@@ -38,7 +38,7 @@ export default function TaskCard({ task, agents, onClick, compact = false, isDra
       exit={{ opacity: 0, y: -10 }}
       whileHover={{ 
         y: -4, 
-        boxShadow: '0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)' 
+        boxShadow: '0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px var(--surface-card-hover-border)'
       }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
       className={cn(
@@ -50,7 +50,7 @@ export default function TaskCard({ task, agents, onClick, compact = false, isDra
       {/* Header: Title + Priority */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <h3 className={cn(
-          "font-semibold text-foreground leading-tight group-hover:text-white transition-colors",
+          "font-semibold text-foreground leading-tight group-hover:text-foreground transition-colors",
           compact ? "text-xs" : "text-sm"
         )}>
           {task.title}

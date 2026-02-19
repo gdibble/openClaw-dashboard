@@ -136,31 +136,30 @@ export function CommandPalette({ onAction }: CommandPaletteProps) {
             <Command
               className="rounded-2xl overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, rgba(33,34,37,0.95), rgba(24,25,27,0.98))',
+                background: 'var(--surface-modal)',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow:
-                  '0 0 0 1px rgba(255,255,255,0.05), 0 4px 8px rgba(0,0,0,0.4), 0 24px 64px rgba(0,0,0,0.6)',
+                border: '1px solid var(--surface-modal-border)',
+                boxShadow: 'var(--shadow-modal)',
               }}
             >
               {/* Search Input */}
-              <div className="flex items-center gap-3 px-4 py-4 border-b border-white/[0.06]">
-                <Search className="w-5 h-5 text-[#697177]" />
+              <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
+                <Search className="w-5 h-5 text-muted-foreground" />
                 <Command.Input
                   value={search}
                   onValueChange={setSearch}
                   placeholder="Type a command or search..."
-                  className="flex-1 bg-transparent text-white placeholder:text-[#697177] outline-none text-base"
+                  className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none text-base"
                   autoFocus
                 />
-                <kbd className="px-2 py-1 text-xs text-[#697177] bg-white/[0.05] rounded border border-white/[0.08]">
+                <kbd className="px-2 py-1 text-xs text-muted-foreground bg-secondary rounded border border-border">
                   ESC
                 </kbd>
               </div>
 
               {/* Command List */}
               <Command.List className="max-h-[400px] overflow-y-auto p-2">
-                <Command.Empty className="py-8 text-center text-[#697177] text-sm">
+                <Command.Empty className="py-8 text-center text-muted-foreground text-sm">
                   No results found.
                 </Command.Empty>
 
@@ -170,7 +169,7 @@ export function CommandPalette({ onAction }: CommandPaletteProps) {
                     heading={group.heading}
                     className="mb-2"
                   >
-                    <div className="px-2 py-2 text-xs font-medium text-[#697177] uppercase tracking-wider">
+                    <div className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {group.heading}
                     </div>
                     {group.commands.map((command) => (
@@ -178,12 +177,12 @@ export function CommandPalette({ onAction }: CommandPaletteProps) {
                         key={command.id}
                         value={command.label}
                         onSelect={() => handleSelect(command.id)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[#b0b4ba] hover:bg-white/[0.06] hover:text-white data-[selected=true]:bg-white/[0.08] data-[selected=true]:text-white transition-colors group"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-foreground/70 hover:bg-muted hover:text-foreground data-[selected=true]:bg-muted data-[selected=true]:text-foreground transition-colors group"
                       >
-                        <command.icon className="w-4 h-4 text-[#697177] group-hover:text-[#b0b4ba] group-data-[selected=true]:text-[#b0b4ba]" />
+                        <command.icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground/70 group-data-[selected=true]:text-foreground/70" />
                         <span className="flex-1">{command.label}</span>
                         {command.shortcut && (
-                          <kbd className="px-1.5 py-0.5 text-xs text-[#697177] bg-white/[0.05] rounded border border-white/[0.08] font-mono">
+                          <kbd className="px-1.5 py-0.5 text-xs text-muted-foreground bg-secondary rounded border border-border font-mono">
                             {command.shortcut}
                           </kbd>
                         )}
@@ -194,22 +193,22 @@ export function CommandPalette({ onAction }: CommandPaletteProps) {
               </Command.List>
 
               {/* Footer */}
-              <div className="px-4 py-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-[#697177]">
+              <div className="px-4 py-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 bg-white/[0.05] rounded border border-white/[0.08]">
+                    <kbd className="px-1.5 py-0.5 bg-secondary rounded border border-border">
                       ↑↓
                     </kbd>
                     Navigate
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 bg-white/[0.05] rounded border border-white/[0.08]">
+                    <kbd className="px-1.5 py-0.5 bg-secondary rounded border border-border">
                       ↵
                     </kbd>
                     Select
                   </span>
                 </div>
-                <span className="text-[#8e4ec6]">OpenClaw</span>
+                <span className="text-[var(--purple)]">OpenClaw</span>
               </div>
             </Command>
           </motion.div>

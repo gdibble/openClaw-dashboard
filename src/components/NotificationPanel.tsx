@@ -19,10 +19,10 @@ const SEVERITY_ICONS = {
 };
 
 const SEVERITY_COLORS = {
-  info: 'text-blue-400',
-  success: 'text-green-400',
-  warning: 'text-amber-400',
-  error: 'text-red-400',
+  info: 'text-blue-500',
+  success: 'text-green-500',
+  warning: 'text-amber-500',
+  error: 'text-red-500',
 };
 
 function timeAgo(ts: number): string {
@@ -44,7 +44,8 @@ export default function NotificationPanel({
   return (
     <motion.div
       className="fixed top-14 right-4 z-50 w-80 sm:w-96 bg-card border border-border rounded-xl
-                 shadow-xl max-h-[70vh] flex flex-col"
+                 max-h-[70vh] flex flex-col"
+      style={{ boxShadow: 'var(--shadow-modal)' }}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}

@@ -116,14 +116,14 @@ export function MetricsPanel({ stats: clusterStats, workers, feed }: MetricsPane
     if (!clusterStats) return [
       { name: 'Completed', value: 0, color: '#22c55e', fallback: '#22c55e' },
       { name: 'Running', value: 0, color: '#3b82f6', fallback: '#3b82f6' },
-      { name: 'Pending', value: 0, color: '#6b7280', fallback: '#6b7280' },
+      { name: 'Pending', value: 0, color: '#9ca3af', fallback: '#9ca3af' },
       { name: 'Failed', value: 0, color: '#ef4444', fallback: '#ef4444' },
     ]
     const t = clusterStats.tasks
     return [
       { name: 'Completed', value: t.completed, color: '#22c55e', fallback: '#22c55e' },
       { name: 'Running', value: t.running + t.assigned, color: '#3b82f6', fallback: '#3b82f6' },
-      { name: 'Pending', value: t.pending, color: '#6b7280', fallback: '#6b7280' },
+      { name: 'Pending', value: t.pending, color: '#9ca3af', fallback: '#9ca3af' },
       { name: 'Failed', value: t.failed, color: '#ef4444', fallback: '#ef4444' },
     ].filter(s => s.value > 0)
   }, [clusterStats])

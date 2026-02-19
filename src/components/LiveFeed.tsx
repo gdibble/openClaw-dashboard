@@ -24,7 +24,7 @@ const typeFilters = [
 ];
 
 const severityConfig = {
-  info: { color: '#697177', icon: MessageSquare },
+  info: { color: 'hsl(var(--muted-foreground))', icon: MessageSquare },
   success: { color: '#46a758', icon: CheckCircle },
   warning: { color: '#ffb224', icon: AlertCircle },
   error: { color: '#e54d2e', icon: AlertCircle },
