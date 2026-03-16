@@ -15,6 +15,7 @@ import { MetricsPanel } from '@/components/MetricsPanel';
 import RoutineManager from '@/components/RoutineManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { CommandPalette } from '@/components/CommandPalette';
+import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog';
 import WelcomeScreen from '@/components/WelcomeScreen';
 import NotificationBell from '@/components/NotificationBell';
 import ChatPanel from '@/components/ChatPanel';
@@ -56,8 +57,23 @@ function DashboardContent() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [chatAgentId, setChatAgentId] = useState<string | null>(null);
   const [routinesOpen, setRoutinesOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Global '?' key to open keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+        e.preventDefault();
+        setShortcutsOpen(true);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -92,7 +108,7 @@ function DashboardContent() {
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
-  const handleCommand = useCallback((action: string) => {
+  const handleCommand = useCallback((action: string, payload?: unknown) => {
     switch (action) {
       case 'new-task':
         setCreateTaskOpen(true);
@@ -115,12 +131,28 @@ function DashboardContent() {
       case 'toggle-theme':
         toggleTheme();
         break;
+      case 'keyboard-shortcuts':
+        setShortcutsOpen(true);
+        break;
+      case 'toggle-sounds':
+        toast.info('Sound support coming soon');
+        break;
       case 'goto-activity':
         router.push('/activity');
         break;
       case 'goto-dashboard':
         // Already on dashboard
         break;
+      case 'open-task': {
+        const p = payload as { taskId?: string } | undefined;
+        if (p?.taskId) setTaskDetailId(p.taskId);
+        break;
+      }
+      case 'open-agent': {
+        const p = payload as { agentId?: string } | undefined;
+        if (p?.agentId) setAgentDetailId(p.agentId);
+        break;
+      }
       default:
         // Dynamic agent filter: "filter-<agentId>"
         if (action.startsWith('filter-')) {
@@ -207,7 +239,8 @@ function DashboardContent() {
   return (
     <div className="min-h-screen">
       {/* Command Palette - Global */}
-      <CommandPalette onAction={handleCommand} />
+      <CommandPalette onAction={handleCommand} tasks={clusterTasks} agents={clusterWorkers} />
+      <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 
       <div className="max-w-6xl mx-auto px-2 sm:px-6 lg:px-8">
         <Header
